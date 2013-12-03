@@ -90,6 +90,8 @@ namespace details {
   TAG_INFO_DEF(std::wstring, string, wstring)
   TAG_INFO_DEF_1(std::size_t N, char[N], char*, string, char[])
   TAG_INFO_DEF_1(std::size_t N, wchar_t[N], wchar_t*, string, wchar_t[])
+  TAG_INFO_DEF_1(std::size_t N, const char[N], const char*, string, const char[])
+  TAG_INFO_DEF_1(std::size_t N, const wchar_t[N], const wchar_t*, string, const wchar_t[])
 #undef TAG_INFO_DEF
 
 
