@@ -236,7 +236,6 @@ void parse_test()
     rabbit::object v(alloc);
     v["name"] = "yui";
     v["age"] = 18;
-    std::string ss = v["name"].as();
     std::string s = v.str();
     rabbit::document doc;
     doc.parse(s);

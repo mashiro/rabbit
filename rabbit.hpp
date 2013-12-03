@@ -872,8 +872,6 @@ public:
   template <typename T> struct is_const<const T&> : details::true_ {};
   template <typename T> struct is_const<const T*> : details::true_ {};
 
-  // typename details::disable_if<is_const<native_value_type>, iterator>::type begin() { return base_type::value_begin(); }
-
   iterator begin()                { return base_type::value_begin(); }
   iterator end()                  { return base_type::value_end(); }
   const_iterator begin() const    { return base_type::value_begin(); }

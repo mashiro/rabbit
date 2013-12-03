@@ -42,14 +42,12 @@ struct runner
     try
     {
       Bench bench;
-      // std::cout << bench.name();
       std::clock_t t = std::clock();
 
       while (n-- > 0)
         bench(json);
 
       score += (std::clock() - t);
-      // std::cout << " score: " << (std::clock() - t) << std::endl;
     }
     catch (std::exception& e)
     {
