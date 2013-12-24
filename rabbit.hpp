@@ -16,18 +16,18 @@
 
 namespace RABBIT_NAMESPACE {
 
-#define TAG_DEF(_type, _N) \
+#define RABBIT_TAG_DEF(_type, _N) \
   struct _type { static const int value; }; \
   const int _type::value = _N; \
 /**/
-TAG_DEF(null_t, rapidjson::kNullType)
-TAG_DEF(false_t, rapidjson::kFalseType)
-TAG_DEF(true_t, rapidjson::kTrueType)
-TAG_DEF(object_t, rapidjson::kObjectType)
-TAG_DEF(array_t, rapidjson::kArrayType)
-TAG_DEF(string_t, rapidjson::kStringType)
-TAG_DEF(number_t, rapidjson::kNumberType)
-#undef TAG_DEF
+RABBIT_TAG_DEF(null_t, rapidjson::kNullType)
+RABBIT_TAG_DEF(false_t, rapidjson::kFalseType)
+RABBIT_TAG_DEF(true_t, rapidjson::kTrueType)
+RABBIT_TAG_DEF(object_t, rapidjson::kObjectType)
+RABBIT_TAG_DEF(array_t, rapidjson::kArrayType)
+RABBIT_TAG_DEF(string_t, rapidjson::kStringType)
+RABBIT_TAG_DEF(number_t, rapidjson::kNumberType)
+#undef RABBIT_TAG_DEF
 
 class type_mismatch : public std::runtime_error
 {
@@ -60,7 +60,7 @@ namespace details {
     static const char* type_name() { return tag_info<type>::type_name(); }
   };
 
-#define TAG_INFO_DEF_1(_T, _type1, _type2, _tag_name, _type_name) \
+#define RABBIT_TAG_INFO_DEF_1(_T, _type1, _type2, _tag_name, _type_name) \
   template <_T> \
   struct tag_info<_type1> \
   { \
@@ -69,30 +69,31 @@ namespace details {
     static const char* type_name() { return #_type_name; } \
   }; \
 /**/
-#define TAG_INFO_DEF(_type, _tag_name, _type_name) \
-  TAG_INFO_DEF_1(, _type, _type, _tag_name, _type_name) \
+#define RABBIT_TAG_INFO_DEF(_type, _tag_name, _type_name) \
+  RABBIT_TAG_INFO_DEF_1(, _type, _type, _tag_name, _type_name) \
 /**/
-  TAG_INFO_DEF(null_t, null, null_t)
-  TAG_INFO_DEF(false_t, false, false_t)
-  TAG_INFO_DEF(true_t, true, true_t)
-  TAG_INFO_DEF(object_t, object, object_t)
-  TAG_INFO_DEF(array_t, array, array_t)
-  TAG_INFO_DEF(string_t, string, string_t)
-  TAG_INFO_DEF(number_t, number, number_t)
+  RABBIT_TAG_INFO_DEF(null_t, null, null_t)
+  RABBIT_TAG_INFO_DEF(false_t, false, false_t)
+  RABBIT_TAG_INFO_DEF(true_t, true, true_t)
+  RABBIT_TAG_INFO_DEF(object_t, object, object_t)
+  RABBIT_TAG_INFO_DEF(array_t, array, array_t)
+  RABBIT_TAG_INFO_DEF(string_t, string, string_t)
+  RABBIT_TAG_INFO_DEF(number_t, number, number_t)
 
-  TAG_INFO_DEF(bool, bool, bool)
-  TAG_INFO_DEF(int, number, int)
-  TAG_INFO_DEF(unsigned, number, unsigned)
-  TAG_INFO_DEF(int64_t, number, int64_t)
-  TAG_INFO_DEF(uint64_t, number, uint64_t)
-  TAG_INFO_DEF(double, number, double)
-  TAG_INFO_DEF(std::string, string, string)
-  TAG_INFO_DEF(std::wstring, string, wstring)
-  TAG_INFO_DEF_1(std::size_t N, char[N], char*, string, char[])
-  TAG_INFO_DEF_1(std::size_t N, wchar_t[N], wchar_t*, string, wchar_t[])
-  TAG_INFO_DEF_1(std::size_t N, const char[N], const char*, string, const char[])
-  TAG_INFO_DEF_1(std::size_t N, const wchar_t[N], const wchar_t*, string, const wchar_t[])
-#undef TAG_INFO_DEF
+  RABBIT_TAG_INFO_DEF(bool, bool, bool)
+  RABBIT_TAG_INFO_DEF(int, number, int)
+  RABBIT_TAG_INFO_DEF(unsigned, number, unsigned)
+  RABBIT_TAG_INFO_DEF(int64_t, number, int64_t)
+  RABBIT_TAG_INFO_DEF(uint64_t, number, uint64_t)
+  RABBIT_TAG_INFO_DEF(double, number, double)
+  RABBIT_TAG_INFO_DEF(std::string, string, string)
+  RABBIT_TAG_INFO_DEF(std::wstring, string, wstring)
+  RABBIT_TAG_INFO_DEF_1(std::size_t N, char[N], char*, string, char[])
+  RABBIT_TAG_INFO_DEF_1(std::size_t N, wchar_t[N], wchar_t*, string, wchar_t[])
+  RABBIT_TAG_INFO_DEF_1(std::size_t N, const char[N], const char*, string, const char[])
+  RABBIT_TAG_INFO_DEF_1(std::size_t N, const wchar_t[N], const wchar_t*, string, const wchar_t[])
+#undef RABBIT_TAG_INFO_DEF
+#undef RABBIT_TAG_INFO_DEF_1
 
 
   template <bool C, typename T = void>
@@ -123,7 +124,7 @@ namespace details {
   typedef bool_<false> false_;
 
 
-#define IS_META_FUNC_DEF(_name, _type) \
+#define RABBIT_IS_META_FUNC_DEF(_name, _type) \
   template <typename T> \
   struct is_##_name##_impl : false_ {}; \
   \
@@ -135,20 +136,20 @@ namespace details {
     : is_##_name##_impl< typename tag_info<T>::type > \
   {}; \
 /**/
-  IS_META_FUNC_DEF(null, null_t)
-  IS_META_FUNC_DEF(false, false_t)
-  IS_META_FUNC_DEF(true, true_t)
-  IS_META_FUNC_DEF(object, object_t)
-  IS_META_FUNC_DEF(array, array_t)
-  IS_META_FUNC_DEF(string, string_t)
-  IS_META_FUNC_DEF(number, number_t)
-  IS_META_FUNC_DEF(bool, bool)
-  IS_META_FUNC_DEF(int, int)
-  IS_META_FUNC_DEF(unsigned, unsigned)
-  IS_META_FUNC_DEF(int64_t, int64_t)
-  IS_META_FUNC_DEF(uint64_t, uint64_t)
-  IS_META_FUNC_DEF(double, double)
-#undef IS_META_FUNC_DEF
+  RABBIT_IS_META_FUNC_DEF(null, null_t)
+  RABBIT_IS_META_FUNC_DEF(false, false_t)
+  RABBIT_IS_META_FUNC_DEF(true, true_t)
+  RABBIT_IS_META_FUNC_DEF(object, object_t)
+  RABBIT_IS_META_FUNC_DEF(array, array_t)
+  RABBIT_IS_META_FUNC_DEF(string, string_t)
+  RABBIT_IS_META_FUNC_DEF(number, number_t)
+  RABBIT_IS_META_FUNC_DEF(bool, bool)
+  RABBIT_IS_META_FUNC_DEF(int, int)
+  RABBIT_IS_META_FUNC_DEF(unsigned, unsigned)
+  RABBIT_IS_META_FUNC_DEF(int64_t, int64_t)
+  RABBIT_IS_META_FUNC_DEF(uint64_t, uint64_t)
+  RABBIT_IS_META_FUNC_DEF(double, double)
+#undef RABBIT_IS_META_FUNC_DEF
 
   // std::basic_string specialization
   template <typename Char>
@@ -484,14 +485,14 @@ public:
     return static_cast<int>(value_->GetType());
   }
 
-#define IS_DEF(_func_name, _base_name) \
+#define RABBIT_IS_DEF(_func_name, _base_name) \
   template <typename T> \
   bool is(typename details::enable_if< details::is_##_func_name<T> >::type* = 0) const \
   { \
     return value_->Is##_base_name(); \
   } \
 /**/
-#define AS_DEF(_func_name, _base_name) \
+#define RABBIT_AS_DEF(_func_name, _base_name) \
   template <typename T> \
   T as(typename details::enable_if< details::is_##_func_name<T> >::type* = 0) const \
   { \
@@ -499,25 +500,25 @@ public:
     return value_->Get##_base_name(); \
   } \
 /**/
-#define IS_AS_DEF(_func_name, _base_name) \
-  IS_DEF(_func_name, _base_name) \
-  AS_DEF(_func_name, _base_name) \
+#define RABBIT_IS_AS_DEF(_func_name, _base_name) \
+  RABBIT_IS_DEF(_func_name, _base_name) \
+  RABBIT_AS_DEF(_func_name, _base_name) \
 /**/
-  IS_DEF(null, Null)
-  IS_DEF(false, False)
-  IS_DEF(true, True)
-  IS_DEF(object, Object)
-  IS_DEF(array, Array)
-  IS_DEF(number, Number)
-  IS_AS_DEF(bool, Bool)
-  IS_AS_DEF(int, Int)
-  IS_AS_DEF(unsigned, Uint)
-  IS_AS_DEF(int64_t, Int64)
-  IS_AS_DEF(uint64_t, Uint64)
-  IS_AS_DEF(double, Double)
-  IS_AS_DEF(string, String)
-#undef AS_DEF
-#undef IS_DEF
+  RABBIT_IS_DEF(null, Null)
+  RABBIT_IS_DEF(false, False)
+  RABBIT_IS_DEF(true, True)
+  RABBIT_IS_DEF(object, Object)
+  RABBIT_IS_DEF(array, Array)
+  RABBIT_IS_DEF(number, Number)
+  RABBIT_IS_AS_DEF(bool, Bool)
+  RABBIT_IS_AS_DEF(int, Int)
+  RABBIT_IS_AS_DEF(unsigned, Uint)
+  RABBIT_IS_AS_DEF(int64_t, Int64)
+  RABBIT_IS_AS_DEF(uint64_t, Uint64)
+  RABBIT_IS_AS_DEF(double, Double)
+  RABBIT_IS_AS_DEF(string, String)
+#undef RABBIT_AS_DEF
+#undef RABBIT_IS_DEF
 
   struct as_t
   {
