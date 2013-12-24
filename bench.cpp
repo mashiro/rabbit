@@ -9,13 +9,6 @@
 #include <picojson.h>
 #include <rabbit.hpp>
 
-std::string get_json()
-{
-  std::ifstream ifs("hot.json");
-  std::istreambuf_iterator<char> it(ifs), last;
-  return std::string(it, last);
-}
-
 void print(int score, const std::string& title, const std::string& url)
 {
   std::cerr << "(" << score << ") " << title << " - " << url << std::endl;
@@ -81,7 +74,7 @@ struct rapidjson_bench
   }
 };
 
-struct picojson_test
+struct picojson_bench
 {
   std::string name() const { return "picojson"; }
   void operator()(const std::string& json) const
@@ -102,7 +95,7 @@ struct picojson_test
   }
 };
 
-struct rabbit_test
+struct rabbit_bench
 {
   std::string name() const { return "rabbit"; }
   void operator()(const std::string& json) const
@@ -110,11 +103,11 @@ struct rabbit_test
     rabbit::document doc;
     try { doc.parse(json); } catch (...) { throw; }
 
-    rabbit::const_array children = doc["data"]["children"];
-    for (rabbit::array::const_iterator it = children.cbegin(); it != children.cend(); ++it)
+    const rabbit::const_array children = doc["data"]["children"];
+    for (rabbit::array::const_iterator it = children.begin(); it != children.end(); ++it)
     {
-      rabbit::const_object data = it->cat("data");
-      print(data.cat("score").as(), data.cat("title").as(), data.cat("url").as());
+      const rabbit::const_object data = it->cat("data");
+      print(data["score"].as(), data["title"].as(), data["url"].as());
     }
   }
 };
@@ -125,8 +118,8 @@ int main(int argc, char** argv)
   if (argc >= 2) n = std::atoi(argv[1]);
 
   runner<rapidjson_bench> r1;
-  runner<picojson_test> r2;
-  runner<rabbit_test> r3;
+  runner<picojson_bench> r2;
+  runner<rabbit_bench> r3;
 
   for (int i = 0; i < 3; ++i)
   {
