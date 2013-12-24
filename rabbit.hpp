@@ -381,6 +381,41 @@ namespace details {
     {}
   };
 
+  template <typename T>
+  class scoped_ptr
+  {
+  private:
+    T* p_;
+
+  private:
+    scoped_ptr(const scoped_ptr& other);
+    scoped_ptr& operator=(const scoped_ptr& other);
+
+  public:
+    explicit scoped_ptr(T* p = 0)
+      : p_(p)
+    {}
+
+    ~scoped_ptr()
+    {
+      delete p_;
+    }
+
+    T* operator->() { return p_; }
+    const T* operator->() const { return p_; }
+
+    T& operator*() { return *p_; }
+    const T& operator*() const { return *p_; }
+
+    T& get() { return *p_; }
+    const T& get() const { return *p_; }
+
+    void swap(scoped_ptr& other)
+    {
+      std::swap(p_, other.p_);
+    }
+  };
+
 } // details
 
 template <typename Traits>
@@ -752,21 +787,30 @@ public:
   typedef Tag tag;
 
 private:
-  native_value_type* impl_;
+  details::scoped_ptr<allocator_type> alloc_impl_;
+  details::scoped_ptr<native_value_type> value_impl_;
 
 public:
+  basic_value()
+    : base_type()
+    , alloc_impl_(new allocator_type())
+    , value_impl_(new native_value_type())
+  {
+    base_type::set_implements(*value_impl_, *alloc_impl_);
+    Traits::set(*this, tag());
+  }
+
   basic_value(allocator_type& alloc)
     : base_type()
-    , impl_(new native_value_type())
+    , value_impl_(new native_value_type())
   {
-    base_type::set_implements(*impl_, alloc);
+    base_type::set_implements(*value_impl_, alloc);
     Traits::set(*this, tag());
   }
 
   template <typename OtherTraits>
   basic_value(basic_value_ref<OtherTraits> ref)
     : base_type()
-    , impl_(0)
   {
     base_type::set_implements(ref);
     if (base_type::template is<null_t>())
@@ -775,14 +819,8 @@ public:
 
   basic_value(basic_value& other)
     : base_type()
-    , impl_(0)
   {
     other.swap(*this);
-  }
-
-  ~basic_value()
-  {
-    delete impl_;
   }
 
   basic_value& operator=(basic_value other)
@@ -806,7 +844,8 @@ public:
   void swap(basic_value& other)
   {
     base_type::swap(other);
-    std::swap(impl_, other.impl_);
+    alloc_impl_.swap(other.alloc_impl_);
+    value_impl_.swap(other.value_impl_);
   }
 };
 
@@ -827,6 +866,10 @@ public:
   typedef typename base_type::const_member_iterator const_iterator;
 
 public:
+  basic_object()
+    : base_type()
+  {}
+
   basic_object(allocator_type& alloc)
     : base_type(alloc)
   {}
@@ -861,6 +904,10 @@ public:
   typedef typename base_type::const_value_iterator  const_iterator;
 
 public:
+  basic_array()
+    : base_type()
+  {}
+
   basic_array(allocator_type& alloc)
     : base_type(alloc)
   {}
@@ -898,19 +945,14 @@ public:
   typedef typename base_type::allocator_type        allocator_type;
 
 private:
-  native_document_type* impl_;
+  details::scoped_ptr<native_document_type> document_impl_;
 
 public:
   basic_document()
     : base_type()
-    , impl_(new native_document_type())
+    , document_impl_(new native_document_type())
   {
-    base_type::set_implements(*impl_, impl_->GetAllocator());
-  }
-
-  ~basic_document()
-  {
-    delete impl_;
+    base_type::set_implements(*document_impl_, document_impl_->GetAllocator());
   }
 
   basic_document& operator=(basic_document other)
@@ -922,7 +964,7 @@ public:
   void swap(basic_document& other)
   {
     base_type::swap(other);
-    std::swap(impl_, other.impl_);
+    document_impl_.swap(other.document_impl_);
   }
 
   void parse(const string_type& str)
@@ -944,9 +986,9 @@ public:
   template <unsigned ParseFlags>
   void parse(const char_type* str)
   {
-    impl_->template Parse<ParseFlags>(str);
-    if (impl_->HasParseError())
-      throw parse_error(impl_->GetParseError());
+    document_impl_->template Parse<ParseFlags>(str);
+    if (document_impl_->HasParseError())
+      throw parse_error(document_impl_->GetParseError());
   }
 };
 

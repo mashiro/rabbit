@@ -50,10 +50,23 @@ inline int count(It first, It last)
   return n;
 }
 
-void type_check_test()
+void allocator_test()
 {
   rabbit::allocator alloc;
-  rabbit::value v(alloc);
+  rabbit::value a(alloc);
+  rabbit::value b(alloc);
+  rabbit::value c;
+
+  OK(a.get_allocator_pointer() != 0);
+  OK(b.get_allocator_pointer() != 0);
+  OK(c.get_allocator_pointer() != 0);
+  OK(a.get_allocator_pointer() == b.get_allocator_pointer());
+  OK(a.get_allocator_pointer() != c.get_allocator_pointer());
+}
+
+void type_check_test()
+{
+  rabbit::value v;
 
   OK(v.is<rabbit::null_t>());
   IS(v.which(), rabbit::null_t::value);
@@ -94,18 +107,17 @@ void type_check_test()
   v.set(rabbit::array_t());
   OK(v.is<rabbit::array_t>());
 
-  rabbit::object o(alloc);
+  rabbit::object o;
   OK(o.is<rabbit::object_t>());
 
-  rabbit::array a(alloc);
+  rabbit::array a;
   OK(a.is<rabbit::array_t>());
 }
 
 void swap_test()
 {
-  rabbit::allocator alloc;
-  rabbit::value a(alloc);
-  rabbit::value b(alloc);
+  rabbit::value a;
+  rabbit::value b;
 
   a = 123;
   b = "str";
@@ -125,9 +137,8 @@ void swap_test()
 
 void object_test()
 {
-  rabbit::allocator alloc;
   {
-    rabbit::object o(alloc);
+    rabbit::object o;
     rabbit::object u = o["user"];
     u["name"] = "yui";
     u["age"] = 18;
@@ -142,8 +153,8 @@ void object_test()
     IS(u["age"].as<int>(), 18);
   }
   {
-    rabbit::object o(alloc);
-    rabbit::object u(alloc);
+    rabbit::object o;
+    rabbit::object u;
     u.insert("name", "yui");
     u.insert("age", 18);
 
@@ -158,7 +169,7 @@ void object_test()
     IS(o["user"]["age"].as<int>(), 18);
   }
   {
-    rabbit::object o(alloc);
+    rabbit::object o;
     o["a"] = 123;
     o["b"] = 1.0;
     o["c"] = "str";
@@ -182,9 +193,8 @@ void object_test()
 
 void array_test()
 {
-  rabbit::allocator alloc;
   {
-    rabbit::array a(alloc);
+    rabbit::array a;
     OK(a.is<rabbit::array>());
     IS(a.size(), 0);
     a.push_back(123);
@@ -232,8 +242,7 @@ void parse_test()
     OK(throw_exception);
   }
   {
-    rabbit::allocator alloc;
-    rabbit::object v(alloc);
+    rabbit::object v;
     v["name"] = "yui";
     v["age"] = 18;
     std::string s = v.str();
@@ -246,6 +255,7 @@ void parse_test()
 
 int main()
 {
+  allocator_test();
   type_check_test();
   swap_test();
   object_test();

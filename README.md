@@ -28,8 +28,7 @@ std::cout << value << std::endl; // 123
 ### serialize
 
 ```cpp
-rabbit::allocator alloc;
-rabbit::object root(alloc);
+rabbit::object root;
 
 rabbit::object user = root["user"];
 user["name"] = "yui";
