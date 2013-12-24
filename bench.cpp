@@ -115,16 +115,17 @@ struct rabbit_bench
 int main(int argc, char** argv)
 {
   int n = 1000;
+  int m = 5;
   if (argc >= 2) n = std::atoi(argv[1]);
+  if (argc >= 3) m = std::atoi(argv[2]);
 
   runner<rapidjson_bench> r1;
   runner<picojson_bench> r2;
   runner<rabbit_bench> r3;
 
-  const int try_count = 5;
-  for (int i = 1; i <= try_count; ++i)
+  for (int i = 1; i <= m; ++i)
   {
-    std::cout << i << "/" << try_count << " trying...";
+    std::cout << i << "/" << m << " trying...";
     r1.run(n);
     r2.run(n);
     r3.run(n);
