@@ -17,6 +17,7 @@ void print(int score, const std::string& title, const std::string& url)
 template <typename Bench>
 struct runner
 {
+  Bench bench;
   std::string json;
   int score;
   int try_count;
@@ -34,7 +35,6 @@ struct runner
   {
     try
     {
-      Bench bench;
       std::clock_t t = std::clock();
 
       while (n-- > 0)
@@ -52,7 +52,7 @@ struct runner
 
   void disp() const
   {
-    std::cout << Bench().name() << " " << "score: " << (score / try_count) << std::endl;
+    std::cout << bench.name() << " " << "score: " << (score / try_count) << std::endl;
   }
 };
 
@@ -103,10 +103,10 @@ struct rabbit_bench
     rabbit::document doc;
     try { doc.parse(json); } catch (...) { throw; }
 
-    const rabbit::const_array children = doc["data"]["children"];
+    rabbit::const_array children = doc["data"]["children"];
     for (rabbit::array::const_iterator it = children.begin(); it != children.end(); ++it)
     {
-      const rabbit::const_object data = it->cat("data");
+      rabbit::const_object data = it->cat("data");
       print(data["score"].as(), data["title"].as(), data["url"].as());
     }
   }
@@ -121,11 +121,14 @@ int main(int argc, char** argv)
   runner<picojson_bench> r2;
   runner<rabbit_bench> r3;
 
-  for (int i = 0; i < 3; ++i)
+  const int try_count = 5;
+  for (int i = 1; i <= try_count; ++i)
   {
+    std::cout << i << "/" << try_count << " trying...";
     r1.run(n);
     r2.run(n);
     r3.run(n);
+    std::cout << "OK" << std::endl;
   }
 
   r1.disp();

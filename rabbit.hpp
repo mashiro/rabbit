@@ -975,21 +975,45 @@ void swap(basic_document<Traits>& a, basic_document<Traits>& b)
 }
 
 
-typedef rapidjson::UTF8<>                                 default_encoding;
-typedef details::value_ref_traits<default_encoding>       default_value_ref_traits;
-typedef details::const_value_ref_traits<default_encoding> default_const_value_ref_traits;
+typedef rapidjson::UTF8<> default_encoding;
 
-typedef basic_value_ref<default_value_ref_traits>         value_ref;
-typedef basic_value_ref<default_const_value_ref_traits>   const_value_ref;
-typedef basic_value<default_value_ref_traits>             value;
-typedef basic_value<default_const_value_ref_traits>       const_value;
-typedef basic_object<default_value_ref_traits>            object;
-typedef basic_object<default_const_value_ref_traits>      const_object;
-typedef basic_array<default_value_ref_traits>             array;
-typedef basic_array<default_const_value_ref_traits>       const_array;
-typedef basic_document<default_value_ref_traits>          document;
-typedef basic_document<default_const_value_ref_traits>    const_document;
-typedef document::allocator_type                          allocator;
+template <typename Encoding = default_encoding>
+struct types
+{
+  typedef Encoding encoding;
+
+  typedef details::value_ref_traits<encoding>                     default_value_ref_traits;
+  typedef details::const_value_ref_traits<encoding>               default_const_value_ref_traits;
+
+  typedef basic_value_ref<default_value_ref_traits>               value_ref;
+  typedef const basic_value_ref<default_const_value_ref_traits>   const_value_ref;
+
+  typedef basic_value<default_value_ref_traits>                   value;
+  typedef const basic_value<default_const_value_ref_traits>       const_value;
+
+  typedef basic_object<default_value_ref_traits>                  object;
+  typedef const basic_object<default_const_value_ref_traits>      const_object;
+
+  typedef basic_array<default_value_ref_traits>                   array;
+  typedef const basic_array<default_const_value_ref_traits>       const_array;
+
+  typedef basic_document<default_value_ref_traits>                document;
+  typedef const basic_document<default_const_value_ref_traits>    const_document;
+
+  typedef typename document::allocator_type                       allocator;
+};
+
+typedef types<>::value_ref          value_ref;
+typedef types<>::const_value_ref    const_value_ref;
+typedef types<>::value              value;
+typedef types<>::const_value        const_value;
+typedef types<>::object             object;
+typedef types<>::const_object       const_object;
+typedef types<>::array              array;
+typedef types<>::const_array        const_array;
+typedef types<>::document           document;
+typedef types<>::const_document     const_document;
+typedef types<>::allocator          allocator;
 
 }
 
