@@ -59,8 +59,8 @@ g++ -I. -O2 -o bench bench.cpp
 ### score
 
 ```
-rapidjson score: 246666
-picojson score: 1883333
-rabbit score: 266666
+rapidjson score: 330745
+picojson  score: 2159180
+rabbit    score: 375581
 ```
 
