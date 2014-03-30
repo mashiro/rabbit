@@ -917,11 +917,6 @@ public:
     : base_type(ref)
   {}
 
-  template <typename T> struct is_const : details::false_ {};
-  template <typename T> struct is_const<const T> : details::true_ {};
-  template <typename T> struct is_const<const T&> : details::true_ {};
-  template <typename T> struct is_const<const T*> : details::true_ {};
-
   iterator begin()                { return base_type::value_begin(); }
   iterator end()                  { return base_type::value_end(); }
   const_iterator begin() const    { return base_type::value_begin(); }
