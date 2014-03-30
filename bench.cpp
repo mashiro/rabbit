@@ -22,14 +22,11 @@ struct runner
   int score;
   int try_count;
 
-  runner()
-    : score(0)
+  runner(const std::string& json)
+    : json(json)
+    , score(0)
     , try_count(0)
-  {
-    std::ifstream ifs("hot.json");
-    std::istreambuf_iterator<char> it(ifs), last;
-    json = std::string(it, last);
-  }
+  {}
 
   void run(int n)
   {
@@ -76,7 +73,7 @@ struct rapidjson_bench
 
 struct picojson_bench
 {
-  std::string name() const { return "picojson"; }
+  std::string name() const { return "picojson "; }
   void operator()(const std::string& json) const
   {
     picojson::value v;
@@ -97,7 +94,7 @@ struct picojson_bench
 
 struct rabbit_bench
 {
-  std::string name() const { return "rabbit"; }
+  std::string name() const { return "rabbit   "; }
   void operator()(const std::string& json) const
   {
     rabbit::document doc;
@@ -115,25 +112,31 @@ struct rabbit_bench
 int main(int argc, char** argv)
 {
   int n = 1000;
-  int m = 5;
   if (argc >= 2) n = std::atoi(argv[1]);
-  if (argc >= 3) m = std::atoi(argv[2]);
 
-  runner<rapidjson_bench> r1;
-  runner<picojson_bench> r2;
-  runner<rabbit_bench> r3;
+  std::ifstream ifs("hot.json");
+  std::istreambuf_iterator<char> it(ifs), last;
+  std::string json = std::string(it, last);
 
-  for (int i = 1; i <= m; ++i)
+  runner<rapidjson_bench> r1(json);
+  runner<picojson_bench> r2(json);
+  runner<rabbit_bench> r3(json);
+
+  int i = 1;
+  while (true)
   {
-    std::cout << i << "/" << m << " trying...";
+    std::cout << i << " trying...";
     r1.run(n);
     r2.run(n);
     r3.run(n);
     std::cout << "OK" << std::endl;
-  }
 
-  r1.disp();
-  r2.disp();
-  r3.disp();
+    r1.disp();
+    r2.disp();
+    r3.disp();
+
+    std::cout << "---" << std::endl;
+    ++i;
+  }
 }
 
