@@ -30,9 +30,10 @@ void is(const A& a, const B& b, const char* file, int line, const char* msg)
   ok(ret, file, line, msg);
 }
 
-void finish()
+int finish()
 {
   printf("\nOK: %d, NG: %d\n", ok_count, ng_count);
+  return ng_count == 0 ? 0 : 1;
 }
 
 #define OK(c) ok((c), __FUNCTION__, __LINE__, #c)
@@ -262,5 +263,5 @@ int main()
   array_test();
   parse_test();
 
-  finish();
+  return finish();
 }
