@@ -1,4 +1,4 @@
-rabbit
+rabbit [![Build Status](https://drone.io/github.com/mashiro/rabbit/status.png)](https://drone.io/github.com/mashiro/rabbit/latest)
 ======
 
 rabbit is a very handy rapidjson wrapper library.
