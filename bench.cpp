@@ -5,6 +5,10 @@
 #include <cstdlib>
 #include <ctime>
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wtautological-constant-out-of-range-compare"
+#endif
+
 #include <rapidjson/document.h>
 #include <picojson.h>
 #include <rabbit.hpp>
@@ -103,7 +107,7 @@ struct rabbit_bench
     rabbit::const_array children = doc["data"]["children"];
     for (rabbit::array::const_iterator it = children.begin(); it != children.end(); ++it)
     {
-      rabbit::const_object data = it->cat("data");
+      rabbit::const_object data = it->at("data");
       print(data["score"].as(), data["title"].as(), data["url"].as());
     }
   }

@@ -12,7 +12,7 @@ rabbit is a very handy rapidjson wrapper library.
 ## how to use
 
 
-### deserialize
+### load
 
 ```cpp
 std::string json = "{\"value\": 123}";
@@ -20,12 +20,12 @@ std::string json = "{\"value\": 123}";
 rabbit::document doc;
 doc.parse(json);
 
-int value = doc["value"].as();
+int value = doc["value"].as_int();
 std::cout << value << std::endl; // 123
 ```
 
 
-### serialize
+### dump
 
 ```cpp
 rabbit::object root;
@@ -40,9 +40,13 @@ std::cout << root.str() << std::endl; // {"user":{"name":"yui","age":18}}
 
 ## test
 
+* require : boost.test
+
 ```bash
-g++ -I. -o test test.cpp
-./test
+mkdir build
+cmake ..
+make
+make test
 ```
 
 
@@ -59,8 +63,9 @@ g++ -I. -O2 -o bench bench.cpp
 ### score
 
 ```
-rapidjson score: 330745
-picojson  score: 2159180
-rabbit    score: 375581
+30 trying...OK
+rapidjson score: 370425
+picojson  score: 2590521
+rabbit    score: 385049
 ```
 

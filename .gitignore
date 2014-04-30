@@ -1,5 +1,5 @@
 *.o
 *.json
-test
 bench
+/build
 /thirdparty

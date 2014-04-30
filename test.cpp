@@ -51,11 +51,11 @@ inline int count(It first, It last)
   return n;
 }
 
-void allocator_test()
+void allocator_tagest()
 {
   rabbit::allocator alloc;
-  rabbit::value a(alloc);
-  rabbit::value b(alloc);
+  rabbit::value a(1, alloc);
+  rabbit::value b(2, alloc);
   rabbit::value c;
 
   OK(a.get_allocator_pointer() != 0);
@@ -65,57 +65,57 @@ void allocator_test()
   OK(a.get_allocator_pointer() != c.get_allocator_pointer());
 }
 
-void type_check_test()
+void type_check_tagest()
 {
   rabbit::value v;
 
-  OK(v.is<rabbit::null_t>());
-  IS(v.which(), rabbit::null_t::value);
+  OK(v.is<rabbit::null_tag>());
+  IS(v.which(), rabbit::null_tag::value);
 
   v = false;
-  OK(v.is<rabbit::false_t>());
+  OK(v.is<rabbit::false_tag>());
   OK(v.is<bool>());
-  IS(v.which(), rabbit::false_t::value);
+  IS(v.which(), rabbit::false_tag::value);
 
   v = true;
-  OK(v.is<rabbit::true_t>());
+  OK(v.is<rabbit::true_tag>());
   OK(v.is<bool>());
-  IS(v.which(), rabbit::true_t::value);
+  IS(v.which(), rabbit::true_tag::value);
 
-  v = rabbit::object_t();
-  OK(v.is<rabbit::object_t>());
+  v = rabbit::object_tag();
+  OK(v.is<rabbit::object_tag>());
   OK(v.is<rabbit::object>());
-  IS(v.which(), rabbit::object_t::value);
+  IS(v.which(), rabbit::object_tag::value);
 
-  v = rabbit::array_t();
-  OK(v.is<rabbit::array_t>());
+  v = rabbit::array_tag();
+  OK(v.is<rabbit::array_tag>());
   OK(v.is<rabbit::array>());
-  IS(v.which(), rabbit::array_t::value);
+  IS(v.which(), rabbit::array_tag::value);
 
   v = "123";
-  OK(v.is<rabbit::string_t>());
+  OK(v.is<rabbit::string_tag>());
   OK(v.is<std::string>());
-  IS(v.which(), rabbit::string_t::value);
+  IS(v.which(), rabbit::string_tag::value);
 
   v = 123;
-  OK(v.is<rabbit::number_t>());
+  OK(v.is<rabbit::number_tag>());
   OK(v.is<int>());
-  IS(v.which(), rabbit::number_t::value);
+  IS(v.which(), rabbit::number_tag::value);
 
-  v.set(rabbit::object_t());
-  OK(v.is<rabbit::object_t>());
+  v.set(rabbit::object_tag());
+  OK(v.is<rabbit::object_tag>());
 
-  v.set(rabbit::array_t());
-  OK(v.is<rabbit::array_t>());
+  v.set(rabbit::array_tag());
+  OK(v.is<rabbit::array_tag>());
 
   rabbit::object o;
-  OK(o.is<rabbit::object_t>());
+  OK(o.is<rabbit::object_tag>());
 
   rabbit::array a;
-  OK(a.is<rabbit::array_t>());
+  OK(a.is<rabbit::array_tag>());
 }
 
-void swap_test()
+void swap_tagest()
 {
   rabbit::value a;
   rabbit::value b;
@@ -136,11 +136,11 @@ void swap_test()
   IS(b.as<int>(), 123);
 }
 
-void object_test()
+void object_tagest()
 {
   {
     rabbit::object o;
-    rabbit::object u = o["user"];
+    rabbit::object u(o["user"]);
     u["name"] = "yui";
     u["age"] = 18;
 
@@ -161,7 +161,7 @@ void object_test()
 
     //u["user"] = u; // not support operator[]
     o.insert("user", u); // u is destroyed!
-    OK(u.is<rabbit::null_t>());
+    OK(u.is<rabbit::null_tag>());
 
     OK(o.is<rabbit::object>());
     OK(o.has("user"));
@@ -192,7 +192,7 @@ void object_test()
   }
 }
 
-void array_test()
+void array_tagest()
 {
   {
     rabbit::array a;
@@ -227,7 +227,7 @@ void array_test()
   }
 }
 
-void parse_test()
+void parse_tagest()
 {
   {
     rabbit::document doc;
@@ -256,12 +256,12 @@ void parse_test()
 
 int main()
 {
-  allocator_test();
-  type_check_test();
-  swap_test();
-  object_test();
-  array_test();
-  parse_test();
+  allocator_tagest();
+  type_check_tagest();
+  swap_tagest();
+  object_tagest();
+  array_tagest();
+  parse_tagest();
 
   return finish();
 }

@@ -21,6 +21,10 @@
 #ifndef RABBIT_HPP_INCLUDED
 #define RABBIT_HPP_INCLUDED
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wtautological-constant-out-of-range-compare"
+#endif
+
 #ifndef RABBIT_NAMESPACE
 #define RABBIT_NAMESPACE rabbit
 #endif
@@ -30,23 +34,29 @@
 #include <iterator>
 #include <algorithm>
 #include <sstream>
+#include <iosfwd>
 #include <rapidjson/document.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
 
 namespace RABBIT_NAMESPACE {
 
-#define RABBIT_TAG_DEF(_type, _N) \
-  struct _type { static const int value; }; \
-  const int _type::value = _N; \
+#define RABBIT_TAG_DEF(name, id) \
+  struct name \
+  { \
+    static const rapidjson::Type native_value; \
+    static const int value; \
+  }; \
+  const rapidjson::Type name::native_value = id; \
+  const int name::value = id; \
 /**/
-RABBIT_TAG_DEF(null_t, rapidjson::kNullType)
-RABBIT_TAG_DEF(false_t, rapidjson::kFalseType)
-RABBIT_TAG_DEF(true_t, rapidjson::kTrueType)
-RABBIT_TAG_DEF(object_t, rapidjson::kObjectType)
-RABBIT_TAG_DEF(array_t, rapidjson::kArrayType)
-RABBIT_TAG_DEF(string_t, rapidjson::kStringType)
-RABBIT_TAG_DEF(number_t, rapidjson::kNumberType)
+RABBIT_TAG_DEF(null_tag, rapidjson::kNullType)
+RABBIT_TAG_DEF(false_tag, rapidjson::kFalseType)
+RABBIT_TAG_DEF(true_tag, rapidjson::kTrueType)
+RABBIT_TAG_DEF(object_tag, rapidjson::kObjectType)
+RABBIT_TAG_DEF(array_tag, rapidjson::kArrayType)
+RABBIT_TAG_DEF(string_tag, rapidjson::kStringType)
+RABBIT_TAG_DEF(number_tag, rapidjson::kNumberType)
 #undef RABBIT_TAG_DEF
 
 class type_mismatch : public std::runtime_error
@@ -65,56 +75,13 @@ public:
   {}
 };
 
+// fwd
+template <typename Traits> class basic_value_ref;
+template <typename Traits, typename DefaultTag> class basic_value;
+template <typename Traits> class basic_object;
+template <typename Traits> class basic_array;
+
 namespace details {
-
-  struct none_t {};
-
-  template <typename T>
-  struct tag_info {};
-
-  template <template <class T> class Value, typename Traits>
-  struct tag_info< Value<Traits> >
-  {
-    typedef typename Value<Traits>::tag type;
-    static const char* tag_name() { return tag_info<type>::tag_name(); }
-    static const char* type_name() { return tag_info<type>::type_name(); }
-  };
-
-#define RABBIT_TAG_INFO_DEF_1(_T, _type1, _type2, _tag_name, _type_name) \
-  template <_T> \
-  struct tag_info<_type1> \
-  { \
-    typedef _type2 type; \
-    static const char* tag_name() { return #_tag_name; } \
-    static const char* type_name() { return #_type_name; } \
-  }; \
-/**/
-#define RABBIT_TAG_INFO_DEF(_type, _tag_name, _type_name) \
-  RABBIT_TAG_INFO_DEF_1(, _type, _type, _tag_name, _type_name) \
-/**/
-  RABBIT_TAG_INFO_DEF(null_t, null, null_t)
-  RABBIT_TAG_INFO_DEF(false_t, false, false_t)
-  RABBIT_TAG_INFO_DEF(true_t, true, true_t)
-  RABBIT_TAG_INFO_DEF(object_t, object, object_t)
-  RABBIT_TAG_INFO_DEF(array_t, array, array_t)
-  RABBIT_TAG_INFO_DEF(string_t, string, string_t)
-  RABBIT_TAG_INFO_DEF(number_t, number, number_t)
-
-  RABBIT_TAG_INFO_DEF(bool, bool, bool)
-  RABBIT_TAG_INFO_DEF(int, number, int)
-  RABBIT_TAG_INFO_DEF(unsigned, number, unsigned)
-  RABBIT_TAG_INFO_DEF(int64_t, number, int64_t)
-  RABBIT_TAG_INFO_DEF(uint64_t, number, uint64_t)
-  RABBIT_TAG_INFO_DEF(double, number, double)
-  RABBIT_TAG_INFO_DEF(std::string, string, string)
-  RABBIT_TAG_INFO_DEF(std::wstring, string, wstring)
-  RABBIT_TAG_INFO_DEF_1(std::size_t N, char[N], char*, string, char[])
-  RABBIT_TAG_INFO_DEF_1(std::size_t N, wchar_t[N], wchar_t*, string, wchar_t[])
-  RABBIT_TAG_INFO_DEF_1(std::size_t N, const char[N], const char*, string, const char[])
-  RABBIT_TAG_INFO_DEF_1(std::size_t N, const wchar_t[N], const wchar_t*, string, const wchar_t[])
-#undef RABBIT_TAG_INFO_DEF
-#undef RABBIT_TAG_INFO_DEF_1
-
 
   template <bool C, typename T = void>
   struct enable_if_c
@@ -134,6 +101,7 @@ namespace details {
   struct disable_if : enable_if_c<!Cond::value, T>
   {};
 
+
   template <bool C>
   struct bool_
   {
@@ -143,55 +111,91 @@ namespace details {
   typedef bool_<true> true_;
   typedef bool_<false> false_;
 
+  // type traits
+  template <typename T> struct is_tag : false_ {};
+  template <> struct is_tag<null_tag> : true_ {};
+  template <> struct is_tag<false_tag> : true_ {};
+  template <> struct is_tag<true_tag> : true_ {};
+  template <> struct is_tag<object_tag> : true_ {};
+  template <> struct is_tag<array_tag> : true_ {};
+  template <> struct is_tag<string_tag> : true_ {};
+  template <> struct is_tag<number_tag> : true_ {};
 
-#define RABBIT_IS_META_FUNC_DEF(_name, _type) \
-  template <typename T> \
-  struct is_##_name##_impl : false_ {}; \
-  \
-  template <> \
-  struct is_##_name##_impl<_type> : true_ {}; \
-  \
-  template <typename T> \
-  struct is_##_name \
-    : is_##_name##_impl< typename tag_info<T>::type > \
-  {}; \
-/**/
-  RABBIT_IS_META_FUNC_DEF(null, null_t)
-  RABBIT_IS_META_FUNC_DEF(false, false_t)
-  RABBIT_IS_META_FUNC_DEF(true, true_t)
-  RABBIT_IS_META_FUNC_DEF(object, object_t)
-  RABBIT_IS_META_FUNC_DEF(array, array_t)
-  RABBIT_IS_META_FUNC_DEF(string, string_t)
-  RABBIT_IS_META_FUNC_DEF(number, number_t)
-  RABBIT_IS_META_FUNC_DEF(bool, bool)
-  RABBIT_IS_META_FUNC_DEF(int, int)
-  RABBIT_IS_META_FUNC_DEF(unsigned, unsigned)
-  RABBIT_IS_META_FUNC_DEF(int64_t, int64_t)
-  RABBIT_IS_META_FUNC_DEF(uint64_t, uint64_t)
-  RABBIT_IS_META_FUNC_DEF(double, double)
-#undef RABBIT_IS_META_FUNC_DEF
+  template <typename T> struct is_null : false_ {};
+  template <> struct is_null<null_tag> : true_ {};
 
-  // std::basic_string specialization
-  template <typename Char>
-  struct is_string_impl< std::basic_string<Char> > : true_ {};
+  template <typename T> struct is_false : false_ {};
+  template <> struct is_false<false_tag> : true_ {};
 
-  template <typename T>
-  struct is_value : bool_<
-                  is_object<T>::value ||
-                  is_array<T>::value> {};
+  template <typename T> struct is_true : false_ {};
+  template <> struct is_true<true_tag> : true_ {};
+
+  template <typename T> struct is_object : false_ {};
+  template <> struct is_object<object_tag> : true_ {};
+  template <typename Traits> struct is_object< basic_object<Traits> > : true_ {};
+
+  template <typename T> struct is_array : false_ {};
+  template <> struct is_array<array_tag> : true_ {};
+  template <typename Traits> struct is_array< basic_array<Traits> > : true_ {};
+
+  template <typename T> struct is_string : false_ {};
+  template <> struct is_string<string_tag> : true_ {};
+  template <typename Char> struct is_string< std::basic_string<Char> > : true_ {};
+
+  template <typename T> struct is_number : false_ {};
+  template <> struct is_number<number_tag> : true_ {};
+
+  template <typename T> struct is_bool : false_ {};
+  template <> struct is_bool<bool> : true_ {};
+
+  template <typename T> struct is_int : false_ {};
+  template <> struct is_int<int> : true_ {};
+
+  template <typename T> struct is_uint : false_ {};
+  template <> struct is_uint<unsigned> : true_ {};
+
+  template <typename T> struct is_int64 : false_ {};
+  template <> struct is_int64<int64_t> : true_ {};
+
+  template <typename T> struct is_uint64 : false_ {};
+  template <> struct is_uint64<uint64_t> : true_ {};
+
+  template <typename T> struct is_double : false_ {};
+  template <> struct is_double<double> : true_ {};
+
+  template <typename T> struct is_value_ref : false_ {};
+  template <typename Traits> struct is_value_ref< basic_value_ref<Traits> > : true_ {};
+  template <typename Traits, typename DefaultTag> struct is_value_ref< basic_value<Traits, DefaultTag> > : true_ {};
+  template <typename Traits> struct is_value_ref< basic_object<Traits> > : true_ {};
+  template <typename Traits> struct is_value_ref< basic_array<Traits> > : true_ {};
+
+  // type name
+  template <typename T> const char* type_name(typename enable_if< is_null<T> >::type* = 0)        { return "null"; }
+  template <typename T> const char* type_name(typename enable_if< is_false<T> >::type* = 0)       { return "false"; }
+  template <typename T> const char* type_name(typename enable_if< is_true<T> >::type* = 0)        { return "true"; }
+  template <typename T> const char* type_name(typename enable_if< is_object<T> >::type* = 0)      { return "object"; }
+  template <typename T> const char* type_name(typename enable_if< is_array<T> >::type* = 0)       { return "array"; }
+  template <typename T> const char* type_name(typename enable_if< is_string<T> >::type* = 0)      { return "string"; }
+  template <typename T> const char* type_name(typename enable_if< is_number<T> >::type* = 0)      { return "number"; }
+  template <typename T> const char* type_name(typename enable_if< is_bool<T> >::type* = 0)        { return "bool"; }
+  template <typename T> const char* type_name(typename enable_if< is_int<T> >::type* = 0)         { return "int"; }
+  template <typename T> const char* type_name(typename enable_if< is_uint<T> >::type* = 0)        { return "uint"; }
+  template <typename T> const char* type_name(typename enable_if< is_int64<T> >::type* = 0)       { return "int64"; }
+  template <typename T> const char* type_name(typename enable_if< is_uint64<T> >::type* = 0)      { return "uint64"; }
+  template <typename T> const char* type_name(typename enable_if< is_double<T> >::type* = 0)      { return "double"; }
+  template <typename T> const char* type_name(typename enable_if< is_value_ref<T> >::type* = 0)   { return "value_ref"; }
 
 
-  template <typename T>
-  struct remove_reference { typedef T type; };
+  template <typename T> struct remove_reference { typedef T type; };
+  template <typename T> struct remove_reference<T&> { typedef T type; };
 
-  template <typename T>
-  struct remove_reference<T&> { typedef T type; };
-
+  template <typename T> struct remove_const { typedef T type; };
+  template <typename T> struct remove_const<const T> { typedef T type; };
 
   template <typename PseudoReference>
   struct operator_arrow_proxy
   {
-    mutable PseudoReference value_;
+    mutable typename remove_const<PseudoReference>::type value_;
     operator_arrow_proxy(const PseudoReference& value) : value_(value) {}
     PseudoReference* operator->() const { return &value_; }
   };
@@ -230,10 +234,13 @@ namespace details {
 
   public:
     transform_iterator()
+      : it_()
+      , func_()
     {}
 
     explicit transform_iterator(const iterator_type& it)
       : it_(it)
+      , func_()
     {}
 
     transform_iterator(const iterator_type& it, const function_type& func)
@@ -308,29 +315,29 @@ namespace details {
     class proxy
     {
       wrapped_type& member_;
-      allocator_type& alloc_;
+      allocator_type* alloc_;
 
     public:
-      proxy(wrapped_type& member, allocator_type& alloc)
+      proxy(wrapped_type& member, allocator_type* alloc)
         : member_(member)
         , alloc_(alloc)
       {}
 
-      string_type name() const { return value_ref_type(member_.name, alloc_).template as<string_type>(); }
-      value_ref_type value() const { return value_ref_type(member_.value, alloc_); }
+      string_type name() const { return value_ref_type(&(member_.name), alloc_).template as_string(); }
+      value_ref_type value() const { return value_ref_type(&(member_.value), alloc_); }
     };
 
   private:
-    allocator_type& alloc_;
+    allocator_type* alloc_;
 
   public:
-    member_wrapper(allocator_type& alloc)
+    member_wrapper(allocator_type* alloc)
       : alloc_(alloc)
     {}
 
     template <typename OtherMember, typename OtherValueRef>
     member_wrapper(const member_wrapper<OtherMember, OtherValueRef>& other)
-      : alloc_(other.get_allocator())
+      : alloc_(other.get_allocator_pointer())
     {}
 
     typedef proxy result_type;
@@ -339,7 +346,7 @@ namespace details {
       return result_type(member, alloc_);
     }
 
-    allocator_type& get_allocator() const { return alloc_; }
+    allocator_type* get_allocator_pointer() const { return alloc_; }
   };
 
   template <typename Value, typename ValueRef>
@@ -352,37 +359,42 @@ namespace details {
     typedef typename ValueRef::allocator_type allocator_type;
 
   private:
-    allocator_type& alloc_;
+    allocator_type* alloc_;
 
   public:
-    value_wrapper(allocator_type& alloc)
+    value_wrapper(allocator_type* alloc)
       : alloc_(alloc)
     {}
 
     template <typename OtherValue, typename OtherValueRef>
     value_wrapper(const value_wrapper<OtherValue, OtherValueRef>& other)
-      : alloc_(other.get_allocator())
+      : alloc_(other.get_allocator_pointer())
     {}
 
     typedef value_ref_type result_type;
     result_type operator()(wrapped_type& value) const
     {
-      return result_type(value, alloc_);
+      return result_type(&value, alloc_);
     }
 
-    allocator_type& get_allocator() const { return alloc_; }
+    allocator_type* get_allocator_pointer() const { return alloc_; }
   };
+
+  template <typename Encoding> struct value_ref_traits;
+  template <typename Encoding> struct const_value_ref_traits;
 
   template <typename Encoding>
   struct value_ref_traits
   {
-    typedef Encoding encoding_type;
-    typedef rapidjson::GenericDocument<Encoding> document_type;
-    typedef rapidjson::GenericValue<Encoding> value_type;
-    typedef typename document_type::AllocatorType allocator_type;
+    typedef Encoding                                            encoding_type;
+    typedef rapidjson::Type                                     native_type;
+    typedef rapidjson::GenericDocument<Encoding>                native_document_type;
+    typedef rapidjson::GenericValue<Encoding>                   native_value_type;
+    typedef typename native_document_type::AllocatorType        native_allocator_type;
+    typedef const_value_ref_traits<Encoding>                    const_traits;
 
     template <typename ValueRef, typename Tag>
-    static void set(ValueRef& ref, Tag tag)
+    static void set(ValueRef& ref, Tag tag = Tag())
     {
       ref.set(tag);
     }
@@ -391,15 +403,18 @@ namespace details {
   template <typename Encoding>
   struct const_value_ref_traits
   {
-    typedef Encoding encoding_type;
-    typedef const rapidjson::GenericDocument<Encoding> document_type;
-    typedef const rapidjson::GenericValue<Encoding> value_type;
-    typedef const typename document_type::AllocatorType allocator_type;
+    typedef Encoding                                            encoding_type;
+    typedef const rapidjson::Type                               native_type;
+    typedef const rapidjson::GenericDocument<Encoding>          native_document_type;
+    typedef const rapidjson::GenericValue<Encoding>             native_value_type;
+    typedef const typename native_document_type::AllocatorType  native_allocator_type;
+    typedef const_value_ref_traits<Encoding>                    const_traits;
 
     template <typename ValueRef, typename Tag>
-    static void set(const ValueRef&, Tag)
+    static void set(const ValueRef& ref, Tag tag = Tag())
     {}
   };
+
 
   template <typename T>
   class scoped_ptr
@@ -427,10 +442,10 @@ namespace details {
     T& operator*() { return *p_; }
     const T& operator*() const { return *p_; }
 
-    T& get() { return *p_; }
-    const T& get() const { return *p_; }
+    T* get() { return p_; }
+    const T* get() const { return p_; }
 
-    void swap(scoped_ptr& other)
+    void swap(scoped_ptr& other) throw()
     {
       std::swap(p_, other.p_);
     }
@@ -441,69 +456,43 @@ namespace details {
 template <typename Traits>
 class basic_value_ref
 {
-  typedef Traits traits_type;
-
 public:
-  typedef typename traits_type::encoding_type   encoding_type;
-  typedef typename traits_type::document_type   native_document_type;
-  typedef typename traits_type::value_type      native_value_type;
-  typedef typename traits_type::allocator_type  allocator_type;
+  typedef Traits                                        traits;
+  typedef typename Traits::const_traits                 const_traits;
 
-  typedef typename encoding_type::Ch            char_type;
-  typedef std::basic_string<char_type>          string_type;
-  typedef basic_value_ref                       value_ref_type;
-  typedef basic_value_ref< details::const_value_ref_traits<encoding_type> > const_value_ref_type;
+  typedef typename traits::encoding_type                encoding_type;
+  typedef typename traits::native_type                  native_type;
+  typedef typename traits::native_document_type         native_document_type;
+  typedef typename traits::native_value_type            native_value_type;
+  typedef typename traits::native_allocator_type        native_allocator_type;
+
+  typedef basic_value_ref<traits>                       value_ref_type;
+  typedef const basic_value_ref<const_traits>           const_value_ref_type;
+  typedef typename encoding_type::Ch                    char_type;
+  typedef std::basic_string<char_type>                  string_type;
+  typedef native_allocator_type                         allocator_type;
 
 private:
-  typedef details::member_wrapper<
-    typename native_value_type::Member, value_ref_type> member_wrapper_type;
-  typedef details::member_wrapper<
-    const typename native_value_type::Member, const_value_ref_type> const_member_wrapper_type;
-  typedef details::value_wrapper<
-    native_value_type, value_ref_type> value_wrapper_type;
-  typedef details::value_wrapper<
-    const native_value_type, const_value_ref_type> const_value_wrapper_type;
+  typedef details::member_wrapper<      typename native_value_type::Member,       value_ref_type> member_wrapper_type;
+  typedef details::member_wrapper<const typename native_value_type::Member, const_value_ref_type> const_member_wrapper_type;
+  typedef details::value_wrapper<      native_value_type,       value_ref_type> value_wrapper_type;
+  typedef details::value_wrapper<const native_value_type, const_value_ref_type> const_value_wrapper_type;
 
 public:
-  typedef details::transform_iterator<
-    member_wrapper_type, typename native_value_type::MemberIterator> member_iterator;
-  typedef details::transform_iterator<
-    const_member_wrapper_type, typename native_value_type::ConstMemberIterator> const_member_iterator;
-  typedef details::transform_iterator<
-    value_wrapper_type, typename native_value_type::ValueIterator> value_iterator;
-  typedef details::transform_iterator<
-    const_value_wrapper_type, typename native_value_type::ConstValueIterator> const_value_iterator;
+  typedef details::transform_iterator<      member_wrapper_type, typename native_value_type::MemberIterator> member_iterator;
+  typedef details::transform_iterator<const_member_wrapper_type, typename native_value_type::ConstMemberIterator> const_member_iterator;
+  typedef details::transform_iterator<      value_wrapper_type, typename native_value_type::ValueIterator> value_iterator;
+  typedef details::transform_iterator<const_value_wrapper_type, typename native_value_type::ConstValueIterator> const_value_iterator;
 
 private:
   native_value_type* value_;
   allocator_type* alloc_;
 
-protected:
-  void set_implements(native_value_type& value, allocator_type& alloc)
-  {
-    value_ = &value;
-    alloc_ = &alloc;
-  }
-
-  template <typename OtherTraits>
-  void set_implements(const basic_value_ref<OtherTraits>& ref)
-  {
-    value_ = ref.get_native_value_pointer();
-    alloc_ = ref.get_allocator_pointer();
-  }
-
 public:
-  basic_value_ref()
-    : value_(0)
-    , alloc_(0)
+  basic_value_ref(native_value_type* value = 0, allocator_type* alloc = 0)
+    : value_(value)
+    , alloc_(alloc)
   {}
-
-  basic_value_ref(native_value_type& value, allocator_type& alloc)
-    : value_(0)
-    , alloc_(0)
-  {
-    set_implements(value, alloc);
-  }
 
   template <typename OtherTraits>
   basic_value_ref(const basic_value_ref<OtherTraits>& other)
@@ -515,10 +504,9 @@ public:
   allocator_type* get_allocator_pointer() const { return alloc_; }
   allocator_type& get_allocator() const { return *alloc_; }
 
-  void set(details::none_t)           {}
-  void set(null_t)                    { value_->SetNull(); }
-  void set(object_t)                  { value_->SetObject(); }
-  void set(array_t)                   { value_->SetArray(); }
+  void set(null_tag)                  { value_->SetNull(); }
+  void set(object_tag)                { value_->SetObject(); }
+  void set(array_tag)                 { value_->SetArray(); }
   void set(bool value)                { value_->SetBool(value); }
   void set(int value)                 { value_->SetInt(value); }
   void set(unsigned value)            { value_->SetUint(value); }
@@ -529,35 +517,62 @@ public:
   void set(const string_type& value)  { value_->SetString(value.c_str(), value.size(), *alloc_); }
 
   template <typename T>
+  void set(const T& value, typename details::enable_if< details::is_value_ref<T> >::type* = 0)
+  {
+    if      (value.is_null())   set(null_tag());
+    else if (value.is_bool())   set(value.as_bool());
+    else if (value.is_int())    set(value.as_int());
+    else if (value.is_uint())   set(value.as_uint());
+    else if (value.is_int64())  set(value.as_int64());
+    else if (value.is_uint64()) set(value.as_uint64());
+    else if (value.is_double()) set(value.as_double());
+    else if (value.is_string()) set(value.as_string());
+  }
+
+  template <typename T>
   value_ref_type& operator=(const T& value)
   {
     set(value);
     return *this;
   }
 
+
+  template <typename OtherTraits>
+  bool operator==(const basic_value_ref<OtherTraits>& other) const
+  {
+    if (is_null() && other.is_null()) return true;
+    if (is_bool() && other.is_bool() && as_bool() == other.as_bool()) return true;
+    if (is_int() && other.is_int() && as_int() == other.as_int()) return true;
+    if (is_uint() && other.is_uint() && as_uint() == other.as_uint()) return true;
+    if (is_int64() && other.is_int64() && as_int64() == other.as_int64()) return true;
+    if (is_uint64() && other.is_uint64() && as_uint64() == other.as_uint64()) return true;
+    if (is_double() && other.is_double() && as_double() == other.as_double()) return true;
+    if (is_string() && other.is_string() && as_string() == other.as_string()) return true;
+    return false;
+  }
+
+  template <typename OtherTraits>
+  bool operator!=(const basic_value_ref<OtherTraits>& other) const
+  {
+    return !(*this == other);
+  }
+
+
   int which() const
   {
     return static_cast<int>(value_->GetType());
   }
 
-#define RABBIT_IS_DEF(_func_name, _base_name) \
+#define RABBIT_IS_DEF(name, base_name) \
   template <typename T> \
-  bool is(typename details::enable_if< details::is_##_func_name<T> >::type* = 0) const \
+  bool is(typename details::enable_if< details::is_##name<T> >::type* = 0) const \
   { \
-    return value_->Is##_base_name(); \
+    return value_->Is##base_name(); \
   } \
-/**/
-#define RABBIT_AS_DEF(_func_name, _base_name) \
-  template <typename T> \
-  T as(typename details::enable_if< details::is_##_func_name<T> >::type* = 0) const \
+  bool is_##name() const \
   { \
-    type_check<T>(); \
-    return value_->Get##_base_name(); \
+    return value_->Is##base_name(); \
   } \
-/**/
-#define RABBIT_IS_AS_DEF(_func_name, _base_name) \
-  RABBIT_IS_DEF(_func_name, _base_name) \
-  RABBIT_AS_DEF(_func_name, _base_name) \
 /**/
   RABBIT_IS_DEF(null, Null)
   RABBIT_IS_DEF(false, False)
@@ -565,16 +580,38 @@ public:
   RABBIT_IS_DEF(object, Object)
   RABBIT_IS_DEF(array, Array)
   RABBIT_IS_DEF(number, Number)
-  RABBIT_IS_AS_DEF(bool, Bool)
-  RABBIT_IS_AS_DEF(int, Int)
-  RABBIT_IS_AS_DEF(unsigned, Uint)
-  RABBIT_IS_AS_DEF(int64_t, Int64)
-  RABBIT_IS_AS_DEF(uint64_t, Uint64)
-  RABBIT_IS_AS_DEF(double, Double)
-  RABBIT_IS_AS_DEF(string, String)
-#undef RABBIT_AS_DEF
+  RABBIT_IS_DEF(bool, Bool)
+  RABBIT_IS_DEF(int, Int)
+  RABBIT_IS_DEF(uint, Uint)
+  RABBIT_IS_DEF(int64, Int64)
+  RABBIT_IS_DEF(uint64, Uint64)
+  RABBIT_IS_DEF(double, Double)
+  RABBIT_IS_DEF(string, String)
 #undef RABBIT_IS_DEF
 
+#define RABBIT_AS_DEF(result_type, name, base_name) \
+  template <typename T> \
+  T as(typename details::enable_if< details::is_##name<T> >::type* = 0) const \
+  { \
+    type_check<T>(); \
+    return value_->Get##base_name(); \
+  } \
+  result_type as_##name() const \
+  { \
+    type_check<result_type>(); \
+    return value_->Get##base_name(); \
+  } \
+/**/
+  RABBIT_AS_DEF(bool, bool, Bool)
+  RABBIT_AS_DEF(int, int, Int)
+  RABBIT_AS_DEF(unsigned, uint, Uint)
+  RABBIT_AS_DEF(int64_t, int64, Int64)
+  RABBIT_AS_DEF(uint64_t, uint64, Uint64)
+  RABBIT_AS_DEF(double, double, Double)
+  RABBIT_AS_DEF(string_type, string, String)
+#undef RABBIT_AS_DEF
+
+private:
   struct as_t
   {
     const value_ref_type& ref_;
@@ -584,38 +621,39 @@ public:
     operator Result() const { return ref_.as<Result>(); }
   };
 
+public:
   as_t as() const { return as_t(*this); }
 
   bool has(const string_type& name) const
   {
-    type_check<object_t>();
+    type_check<object_tag>();
     return value_->HasMember(name.c_str());
   }
 
   template <typename T>
-  void insert(const string_type& name, const T& value, typename details::disable_if< details::is_value<T> >::type* = 0)
+  void insert(const string_type& name, const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0)
   {
-    type_check<object_t>();
+    type_check<object_tag>();
     native_value_type v(value);
     value_->AddMember(name.c_str(), *alloc_, v, *alloc_);
   }
 
   template <typename T>
-  void insert(const string_type& name, const T& value, typename details::enable_if< details::is_value<T> >::type* = 0)
+  void insert(const string_type& name, const T& value, typename details::enable_if< details::is_value_ref<T> >::type* = 0)
   {
-    type_check<object_t>();
+    type_check<object_tag>();
     value_->AddMember(name.c_str(), *alloc_, *value.get_native_value_pointer(), *alloc_);
   }
 
   bool erase(const string_type& name)
   {
-    type_check<object_t>();
+    type_check<object_tag>();
     return value_->RemoveMember(name.c_str());
   }
 
   value_ref_type at(const string_type& name)
   {
-    type_check<object_t>();
+    type_check<object_tag>();
 
     if (!has(name))
     {
@@ -623,44 +661,42 @@ public:
       value_->AddMember(name.c_str(), *alloc_, null, *alloc_);
     }
 
-    return value_ref_type((*value_)[name.c_str()], *alloc_);
+    return value_ref_type(&((*value_)[name.c_str()]), alloc_);
   }
 
   const_value_ref_type at(const string_type& name) const
   {
-    type_check<object_t>();
+    type_check<object_tag>();
     if (!has(name))
       throw std::out_of_range("not found");
-    return const_value_ref_type((*value_)[name.c_str()], *alloc_);
+    return const_value_ref_type(&((*value_)[name.c_str()]), alloc_);
   }
-
-  const_value_ref_type cat(const string_type& name) const { return at(name); }
 
   value_ref_type operator[](const string_type& name) { return at(name); }
   const_value_ref_type operator[](const string_type& name) const { return at(name); }
 
   member_iterator member_begin()
   {
-    type_check<object_t>();
-    return details::make_transform_iterator(value_->MemberBegin(), member_wrapper_type(*alloc_));
+    type_check<object_tag>();
+    return details::make_transform_iterator(value_->MemberBegin(), member_wrapper_type(alloc_));
   }
 
   member_iterator member_end()
   {
-    type_check<object_t>();
-    return details::make_transform_iterator(value_->MemberEnd(), member_wrapper_type(*alloc_));
+    type_check<object_tag>();
+    return details::make_transform_iterator(value_->MemberEnd(), member_wrapper_type(alloc_));
   }
 
   const_member_iterator member_begin() const
   {
-    type_check<object_t>();
-    return details::make_transform_iterator(value_->MemberBegin(), const_member_wrapper_type(*alloc_));
+    type_check<object_tag>();
+    return details::make_transform_iterator(value_->MemberBegin(), const_member_wrapper_type(alloc_));
   }
 
   const_member_iterator member_end() const
   {
-    type_check<object_t>();
-    return details::make_transform_iterator(value_->MemberEnd(), const_member_wrapper_type(*alloc_));
+    type_check<object_tag>();
+    return details::make_transform_iterator(value_->MemberEnd(), const_member_wrapper_type(alloc_));
   }
 
   const_member_iterator member_cbegin() const { return member_begin(); }
@@ -669,37 +705,35 @@ public:
 
   std::size_t size() const
   {
-    type_check<array_t>();
+    type_check<array_tag>();
     return value_->Size();
   }
 
   std::size_t capacity() const
   {
-    type_check<array_t>();
+    type_check<array_tag>();
     return value_->Capacity();
   }
 
   bool empty() const
   {
-    type_check<array_t>();
+    type_check<array_tag>();
     return value_->Empty();
   }
 
   value_ref_type at(std::size_t index)
   {
-    type_check<array_t>();
+    type_check<array_tag>();
     range_check(index);
-    return value_ref_type((*value_)[index], *alloc_);
+    return value_ref_type(&((*value_)[index]), alloc_);
   }
 
   const_value_ref_type at(std::size_t index) const
   {
-    type_check<array_t>();
+    type_check<array_tag>();
     range_check(index);
-    return const_value_ref_type((*value_)[index], *alloc_);
+    return const_value_ref_type(&((*value_)[index]), *alloc_);
   }
-
-  const_value_ref_type cat(std::size_t index) const { return at(index); }
 
   value_ref_type operator[](std::size_t index) { return at(index); }
   const_value_ref_type operator[](std::size_t index) const { return at(index); }
@@ -707,45 +741,45 @@ public:
   template <typename T>
   void push_back(const T& value)
   {
-    type_check<array_t>();
+    type_check<array_tag>();
     value_->PushBack(value, *alloc_);
   }
 
   void pop_back()
   {
-    type_check<array_t>();
+    type_check<array_tag>();
     value_->PopBack();
   }
 
   value_iterator value_begin()
   {
-    type_check<array_t>();
-    return details::make_transform_iterator(value_->Begin(), value_wrapper_type(*alloc_));
+    type_check<array_tag>();
+    return details::make_transform_iterator(value_->Begin(), value_wrapper_type(alloc_));
   }
 
   value_iterator value_end()
   {
-    type_check<array_t>();
-    return details::make_transform_iterator(value_->End(), value_wrapper_type(*alloc_));
+    type_check<array_tag>();
+    return details::make_transform_iterator(value_->End(), value_wrapper_type(alloc_));
   }
 
   const_value_iterator value_begin() const
   {
-    type_check<array_t>();
-    return details::make_transform_iterator(value_->Begin(), const_value_wrapper_type(*alloc_));
+    type_check<array_tag>();
+    return details::make_transform_iterator(value_->Begin(), const_value_wrapper_type(alloc_));
   }
 
   const_value_iterator value_end() const
   {
-    type_check<array_t>();
-    return details::make_transform_iterator(value_->End(), const_value_wrapper_type(*alloc_));
+    type_check<array_tag>();
+    return details::make_transform_iterator(value_->End(), const_value_wrapper_type(alloc_));
   }
 
   const_value_iterator value_cbegin() const { return value_begin(); }
   const_value_iterator value_cend() const { return value_end(); }
 
 
-  void swap(value_ref_type& other)
+  void swap(value_ref_type& other) throw()
   {
     std::swap(value_, other.value_);
     std::swap(alloc_, other.alloc_);
@@ -753,12 +787,41 @@ public:
 
   string_type str() const
   {
-    typedef rapidjson::GenericStringBuffer<encoding_type> buffer_t;
-    typedef rapidjson::Writer<buffer_t, encoding_type> writer_t;
-    buffer_t buffer;
-    writer_t writer(buffer);
-    value_->Accept(writer);
-    return buffer.GetString();
+    switch (which())
+    {
+    case null_tag::value:
+      return "null";
+
+    case false_tag::value:
+      return "false";
+
+    case true_tag::value:
+      return "true";
+
+    case string_tag::value:
+      return as_string();
+
+    case number_tag::value:
+      {
+        std::basic_stringstream<char_type> ss;
+        if      (is_int())    ss << as_int();
+        else if (is_uint())   ss << as_uint();
+        else if (is_int64())  ss << as_int64();
+        else if (is_uint64()) ss << as_uint64();
+        else if (is_double()) ss << as_double();
+        return ss.str();
+      }
+
+    default:
+      {
+        typedef rapidjson::GenericStringBuffer<encoding_type> buffer_t;
+        typedef rapidjson::Writer<buffer_t, encoding_type> writer_t;
+        buffer_t buffer;
+        writer_t writer(buffer);
+        value_->Accept(writer);
+        return buffer.GetString();
+      }
+    }
   }
 
 private:
@@ -769,7 +832,7 @@ private:
     {
       std::stringstream ss;
       ss << "value is not ";
-      ss << details::tag_info<T>::tag_name();
+      ss << details::type_name<T>();
       ss << " (which is " << which() << ")";
       throw type_mismatch(ss.str());
     }
@@ -786,101 +849,168 @@ private:
   }
 };
 
-template <typename Traits, typename Tag = details::none_t>
-class basic_value : public basic_value_ref<Traits>
+
+template <typename Traits>
+struct basic_value_base
 {
-public:
   typedef basic_value_ref<Traits>                   base_type;
-  typedef typename base_type::value_ref_type        value_ref_type;
-  typedef typename base_type::const_value_ref_type  const_value_ref_type;
-  typedef typename base_type::char_type             char_type;
-  typedef typename base_type::string_type           string_type;
-  typedef typename base_type::native_document_type  native_document_type;
   typedef typename base_type::native_value_type     native_value_type;
   typedef typename base_type::allocator_type        allocator_type;
 
-  typedef typename base_type::member_iterator       member_iterator;
-  typedef typename base_type::const_member_iterator const_member_iterator;
-  typedef typename base_type::value_iterator        value_iterator;
-  typedef typename base_type::const_value_iterator  const_value_iterator;
+  details::scoped_ptr<native_value_type> value_impl_;
+  details::scoped_ptr<allocator_type> alloc_impl_;
 
-  typedef Tag tag;
+  explicit basic_value_base(native_value_type* value = 0, allocator_type* alloc = 0)
+    : value_impl_(value)
+    , alloc_impl_(alloc)
+  {}
+};
+
+template <typename Traits, typename DefaultTag = null_tag>
+class basic_value 
+  : private basic_value_base<Traits>
+  , public basic_value_ref<Traits>
+{
+public:
+  typedef Traits                                        traits;
+  typedef typename Traits::const_traits                 const_traits;
+
+  typedef basic_value_base<traits>                      member_type;
+  typedef basic_value_ref<traits>                       base_type;
+
+  typedef typename base_type::encoding_type             encoding_type;
+  typedef typename base_type::native_type               native_type;
+  typedef typename base_type::native_document_type      native_document_type;
+  typedef typename base_type::native_value_type         native_value_type;
+  typedef typename base_type::native_allocator_type     native_allocator_type;
+
+  typedef typename base_type::value_ref_type            value_ref_type;
+  typedef typename base_type::const_value_ref_type      const_value_ref_type;
+  typedef typename base_type::char_type                 char_type;
+  typedef typename base_type::string_type               string_type;
+  typedef typename base_type::allocator_type            allocator_type;
+
+  typedef typename base_type::member_iterator           member_iterator;
+  typedef typename base_type::const_member_iterator     const_member_iterator;
+  typedef typename base_type::value_iterator            value_iterator;
+  typedef typename base_type::const_value_iterator      const_value_iterator;
 
 private:
-  details::scoped_ptr<allocator_type> alloc_impl_;
-  details::scoped_ptr<native_value_type> value_impl_;
+  typedef DefaultTag default_tag;
 
 public:
   basic_value()
-    : base_type()
-    , alloc_impl_(new allocator_type())
-    , value_impl_(new native_value_type())
-  {
-    base_type::set_implements(*value_impl_, *alloc_impl_);
-    Traits::set(*this, tag());
-  }
+    : member_type(new native_value_type(DefaultTag::native_value), new allocator_type())
+    , base_type(member_type::value_impl_.get(), member_type::alloc_impl_.get())
+  {}
 
   basic_value(allocator_type& alloc)
-    : base_type()
-    , value_impl_(new native_value_type())
+    : member_type(new native_value_type(DefaultTag::native_value))
+    , base_type(member_type::value_impl_.get(), &alloc)
+  {}
+
+  template <typename Tag>
+  basic_value(Tag tag, typename details::enable_if< details::is_tag<Tag> >::type* = 0)
+    : member_type(new native_value_type(Tag::native_value), new allocator_type())
+    , base_type(member_type::value_impl_.get(), member_type::alloc_impl_.get())
+  {}
+
+  template <typename Tag>
+  basic_value(Tag tag, allocator_type& alloc, typename details::enable_if< details::is_tag<Tag> >::type* = 0)
+    : member_type(new native_value_type(Tag::native_value), &alloc)
+    , base_type(member_type::value_impl_.get(), member_type::alloc_impl_.get())
+  {}
+
+  template <typename T>
+  basic_value(const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0)
+    : member_type(new native_value_type(value), new allocator_type())
+    , base_type(member_type::value_impl_.get(), member_type::alloc_impl_.get())
+  {}
+
+  template <typename T>
+  basic_value(const T& value, allocator_type& alloc, typename details::disable_if< details::is_value_ref<T> >::type* = 0)
+    : member_type(new native_value_type(value))
+    , base_type(member_type::value_impl_.get(), &alloc)
+  {}
+
+
+  basic_value(const basic_value& other)
+    : member_type()
+    , base_type(other)
   {
-    base_type::set_implements(*value_impl_, alloc);
-    Traits::set(*this, tag());
+    if (other.is_root_value())
+      throw std::runtime_error("can not copy root value");
+  }
+
+  basic_value& operator=(const basic_value& other)
+  {
+    if (other.is_root_value())
+      throw std::runtime_error("can not copy root value");
+    basic_value(other).swap(*this);
+    return *this;
   }
 
   template <typename OtherTraits>
-  basic_value(basic_value_ref<OtherTraits> ref)
-    : base_type()
+  basic_value(const basic_value_ref<OtherTraits>& other)
+    : member_type()
+    , base_type(other)
   {
-    base_type::set_implements(ref);
-    if (base_type::template is<null_t>())
-      Traits::set(*this, tag());
+    if (base_type::is_null())
+      traits::set(*this, default_tag());
   }
 
-  basic_value(basic_value& other)
-    : base_type()
+  template <typename OtherTraits>
+  basic_value& operator=(const basic_value_ref<OtherTraits>& other)
   {
-    other.swap(*this);
-  }
-
-  basic_value& operator=(basic_value other)
-  {
-    other.swap(*this);
+    basic_value(other).swap(*this);
     return *this;
   }
+
 
   template <typename T>
   basic_value& operator=(const T& value)
   {
-    base_type::operator=(value);
+    base_type::set(value);
     return *this;
   }
 
   void clear()
   {
-    base_type::set(tag());
+    base_type::set(default_tag());
   }
 
-  void swap(basic_value& other)
+  void swap(basic_value& other) throw()
   {
     base_type::swap(other);
-    alloc_impl_.swap(other.alloc_impl_);
-    value_impl_.swap(other.value_impl_);
+    member_type::value_impl_.swap(other.value_impl_);
+    member_type::alloc_impl_.swap(other.alloc_impl_);
+  }
+
+private:
+  bool is_root_value() const
+  {
+    return member_type::value_impl_.get() != 0
+        || member_type::alloc_impl_.get() != 0;
   }
 };
 
 template <typename Traits>
-class basic_object : public basic_value<Traits, object_t>
+class basic_object : public basic_value<Traits, object_tag>
 {
 public:
-  typedef basic_value<Traits, object_t>             base_type;
-  typedef typename base_type::value_ref_type        value_ref_type;
-  typedef typename base_type::const_value_ref_type  const_value_ref_type;
-  typedef typename base_type::char_type             char_type;
-  typedef typename base_type::string_type           string_type;
-  typedef typename base_type::native_document_type  native_document_type;
-  typedef typename base_type::native_value_type     native_value_type;
-  typedef typename base_type::allocator_type        allocator_type;
+  typedef basic_value<Traits, object_tag>               base_type;
+
+  typedef typename base_type::encoding_type             encoding_type;
+  typedef typename base_type::native_type               native_type;
+  typedef typename base_type::native_document_type      native_document_type;
+  typedef typename base_type::native_value_type         native_value_type;
+  typedef typename base_type::native_allocator_type     native_allocator_type;
+
+  typedef typename base_type::value_ref_type            value_ref_type;
+  typedef typename base_type::const_value_ref_type      const_value_ref_type;
+  typedef typename base_type::char_type                 char_type;
+  typedef typename base_type::string_type               string_type;
+  typedef typename base_type::allocator_type            allocator_type;
 
   typedef typename base_type::member_iterator       iterator;
   typedef typename base_type::const_member_iterator const_iterator;
@@ -894,9 +1024,13 @@ public:
     : base_type(alloc)
   {}
 
+  basic_object(const basic_object& other)
+    : base_type(other)
+  {}
+
   template <typename OtherTraits>
-  basic_object(basic_value_ref<OtherTraits> ref)
-    : base_type(ref)
+  basic_object(const basic_value_ref<OtherTraits>& other)
+    : base_type(other)
   {}
 
   iterator begin()                { return base_type::member_begin(); }
@@ -908,33 +1042,42 @@ public:
 };
 
 template <typename Traits>
-class basic_array : public basic_value<Traits, array_t>
+class basic_array : public basic_value<Traits, array_tag>
 {
 public:
-  typedef basic_value<Traits, array_t>              base_type;
-  typedef typename base_type::value_ref_type        value_ref_type;
-  typedef typename base_type::const_value_ref_type  const_value_ref_type;
-  typedef typename base_type::char_type             char_type;
-  typedef typename base_type::string_type           string_type;
-  typedef typename base_type::native_document_type  native_document_type;
-  typedef typename base_type::native_value_type     native_value_type;
-  typedef typename base_type::allocator_type        allocator_type;
+  typedef basic_value<Traits, array_tag>                base_type;
 
-  typedef typename base_type::value_iterator        iterator;
-  typedef typename base_type::const_value_iterator  const_iterator;
+  typedef typename base_type::encoding_type             encoding_type;
+  typedef typename base_type::native_type               native_type;
+  typedef typename base_type::native_document_type      native_document_type;
+  typedef typename base_type::native_value_type         native_value_type;
+  typedef typename base_type::native_allocator_type     native_allocator_type;
+
+  typedef typename base_type::value_ref_type            value_ref_type;
+  typedef typename base_type::const_value_ref_type      const_value_ref_type;
+  typedef typename base_type::char_type                 char_type;
+  typedef typename base_type::string_type               string_type;
+  typedef typename base_type::allocator_type            allocator_type;
+
+  typedef typename base_type::value_iterator            iterator;
+  typedef typename base_type::const_value_iterator      const_iterator;
 
 public:
   basic_array()
-    : base_type()
+    : base_type(array_tag::native_value)
   {}
 
   basic_array(allocator_type& alloc)
     : base_type(alloc)
   {}
 
+  basic_array(const basic_array& other)
+    : base_type(other)
+  {}
+
   template <typename OtherTraits>
-  basic_array(basic_value_ref<OtherTraits> ref)
-    : base_type(ref)
+  basic_array(const basic_value_ref<OtherTraits>& other)
+    : base_type(other)
   {}
 
   iterator begin()                { return base_type::value_begin(); }
@@ -947,39 +1090,53 @@ public:
 
 
 template <typename Traits>
-class basic_document : public basic_value_ref<Traits>
+struct basic_document_base
+{
+  typedef basic_value_ref<Traits>                   base_type;
+  typedef typename base_type::native_document_type  native_document_type;
+
+  details::scoped_ptr<native_document_type> document_impl_;
+
+  explicit basic_document_base(native_document_type* document = 0)
+    : document_impl_(document)
+  {}
+};
+
+template <typename Traits>
+class basic_document
+  : private basic_document_base<Traits>
+  , public basic_value_ref<Traits>
 {
 public:
-  typedef basic_value_ref<Traits>                   base_type;
-  typedef typename base_type::value_ref_type        value_ref_type;
-  typedef typename base_type::const_value_ref_type  const_value_ref_type;
-  typedef typename base_type::char_type             char_type;
-  typedef typename base_type::string_type           string_type;
-  typedef typename base_type::native_document_type  native_document_type;
-  typedef typename base_type::native_value_type     native_value_type;
-  typedef typename base_type::allocator_type        allocator_type;
+  typedef basic_document_base<Traits>                   member_type;
+  typedef basic_value_ref<Traits>                       base_type;
+
+  typedef typename base_type::encoding_type             encoding_type;
+  typedef typename base_type::native_type               native_type;
+  typedef typename base_type::native_document_type      native_document_type;
+  typedef typename base_type::native_value_type         native_value_type;
+  typedef typename base_type::native_allocator_type     native_allocator_type;
+
+  typedef typename base_type::value_ref_type            value_ref_type;
+  typedef typename base_type::const_value_ref_type      const_value_ref_type;
+  typedef typename base_type::char_type                 char_type;
+  typedef typename base_type::string_type               string_type;
+  typedef typename base_type::allocator_type            allocator_type;
 
 private:
-  details::scoped_ptr<native_document_type> document_impl_;
+  basic_document(const basic_document&);
+  basic_document& operator=(const basic_document&);
 
 public:
   basic_document()
-    : base_type()
-    , document_impl_(new native_document_type())
-  {
-    base_type::set_implements(*document_impl_, document_impl_->GetAllocator());
-  }
-
-  basic_document& operator=(basic_document other)
-  {
-    other.swap(*this);
-    return *this;
-  }
+    : member_type(new native_document_type())
+    , base_type(member_type::document_impl_.get(), &(member_type::document_impl_->GetAllocator()))
+  {}
 
   void swap(basic_document& other)
   {
     base_type::swap(other);
-    document_impl_.swap(other.document_impl_);
+    member_type::document_impl_.swap(other.document_impl_);
   }
 
   void parse(const string_type& str)
@@ -1001,12 +1158,18 @@ public:
   template <unsigned ParseFlags>
   void parse(const char_type* str)
   {
-    document_impl_->template Parse<ParseFlags>(str);
-    if (document_impl_->HasParseError())
-      throw parse_error(document_impl_->GetParseError());
+    member_type::document_impl_->template Parse<ParseFlags>(str);
+    if (member_type::document_impl_->HasParseError())
+      throw parse_error(member_type::document_impl_->GetParseError());
   }
 };
 
+
+template <typename Traits>
+void swap(basic_value_ref<Traits>& a, basic_value_ref<Traits>& b)
+{
+  a.swap(b);
+}
 
 template <typename Traits>
 void swap(basic_value<Traits>& a, basic_value<Traits>& b)
@@ -1033,45 +1196,52 @@ void swap(basic_document<Traits>& a, basic_document<Traits>& b)
 }
 
 
+template <typename Traits>
+typename basic_value_ref<Traits>::string_type str(const basic_value_ref<Traits>& value)
+{
+  return value.str();
+}
+
+template <typename Char, typename Traits>
+std::basic_ostream<Char>& operator<<(std::basic_ostream<Char>& os, const basic_value_ref<Traits>& value)
+{
+  os << str(value);
+  return os;
+}
+
+
 typedef rapidjson::UTF8<> default_encoding;
 
 template <typename Encoding = default_encoding>
 struct types
 {
-  typedef Encoding encoding;
+  typedef details::value_ref_traits<Encoding>         traits;
+  typedef details::const_value_ref_traits<Encoding>   const_traits;
 
-  typedef details::value_ref_traits<encoding>                     default_value_ref_traits;
-  typedef details::const_value_ref_traits<encoding>               default_const_value_ref_traits;
-
-  typedef basic_value_ref<default_value_ref_traits>               value_ref;
-  typedef const basic_value_ref<default_const_value_ref_traits>   const_value_ref;
-
-  typedef basic_value<default_value_ref_traits>                   value;
-  typedef const basic_value<default_const_value_ref_traits>       const_value;
-
-  typedef basic_object<default_value_ref_traits>                  object;
-  typedef const basic_object<default_const_value_ref_traits>      const_object;
-
-  typedef basic_array<default_value_ref_traits>                   array;
-  typedef const basic_array<default_const_value_ref_traits>       const_array;
-
-  typedef basic_document<default_value_ref_traits>                document;
-  typedef const basic_document<default_const_value_ref_traits>    const_document;
-
-  typedef typename document::allocator_type                       allocator;
+  typedef basic_value_ref<traits>                     value_ref;
+  typedef const basic_value_ref<const_traits>         const_value_ref;
+  typedef basic_value<traits>                         value;
+  typedef const basic_value<const_traits>             const_value;
+  typedef basic_object<traits>                        object;
+  typedef const basic_object<const_traits>            const_object;
+  typedef basic_array<traits>                         array;
+  typedef const basic_array<const_traits>             const_array;
+  typedef basic_document<traits>                      document;
+  typedef const basic_document<const_traits>          const_document;
+  typedef typename document::allocator_type           allocator;
 };
 
-typedef types<>::value_ref          value_ref;
-typedef types<>::const_value_ref    const_value_ref;
-typedef types<>::value              value;
-typedef types<>::const_value        const_value;
-typedef types<>::object             object;
-typedef types<>::const_object       const_object;
-typedef types<>::array              array;
-typedef types<>::const_array        const_array;
-typedef types<>::document           document;
-typedef types<>::const_document     const_document;
-typedef types<>::allocator          allocator;
+typedef types<>::value_ref        value_ref;
+typedef types<>::const_value_ref  const_value_ref;
+typedef types<>::value            value;
+typedef types<>::const_value      const_value;
+typedef types<>::object           object;
+typedef types<>::const_object     const_object;
+typedef types<>::array            array;
+typedef types<>::const_array      const_array;
+typedef types<>::document         document;
+typedef types<>::const_document   const_document;
+typedef types<>::allocator        allocator;
 
 }
 
