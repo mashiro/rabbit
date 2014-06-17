@@ -1012,8 +1012,8 @@ public:
   typedef typename base_type::string_type               string_type;
   typedef typename base_type::allocator_type            allocator_type;
 
-  typedef typename base_type::member_iterator       iterator;
-  typedef typename base_type::const_member_iterator const_iterator;
+  typedef typename base_type::member_iterator           iterator;
+  typedef typename base_type::const_member_iterator     const_iterator;
 
 public:
   basic_object()
