@@ -44,11 +44,9 @@ namespace RABBIT_NAMESPACE {
 #define RABBIT_TAG_DEF(name, id) \
   struct name \
   { \
-    static const rapidjson::Type native_value; \
-    static const int value; \
+    static const rapidjson::Type native_value = id; \
+    static const int value = id; \
   }; \
-  const rapidjson::Type name::native_value = id; \
-  const int name::value = id; \
 /**/
 RABBIT_TAG_DEF(null_tag, rapidjson::kNullType)
 RABBIT_TAG_DEF(false_tag, rapidjson::kFalseType)
@@ -1064,7 +1062,7 @@ public:
 
 public:
   basic_array()
-    : base_type(array_tag::native_value)
+    : base_type()
   {}
 
   basic_array(allocator_type& alloc)
