@@ -38,6 +38,7 @@
 #include <rapidjson/document.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
+#include <rapidjson/error/en.h>
 
 namespace RABBIT_NAMESPACE {
 
@@ -65,12 +66,20 @@ public:
   {}
 };
 
+typedef rapidjson::ParseErrorCode parse_error_code;
+
 class parse_error : public std::runtime_error
 {
+private:
+  parse_error_code code_;
+
 public:
-  parse_error(const std::string& msg)
-    : std::runtime_error(msg)
+  parse_error(parse_error_code code)
+    : std::runtime_error(rapidjson::GetParseError_En(code))
+    , code_(code)
   {}
+
+  parse_error_code code() const { return code_; }
 };
 
 // fwd
