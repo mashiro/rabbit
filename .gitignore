@@ -2,4 +2,3 @@
 *.json
 bench
 /build
-/thirdparty
