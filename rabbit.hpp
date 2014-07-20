@@ -693,14 +693,14 @@ public:
   {
     type_check<object_tag>();
     native_value_type v(value);
-    value_->AddMember(name.data(), *alloc_, v, *alloc_);
+    value_->AddMember(rapidjson::StringRef(name.data(), name.length()), v, *alloc_);
   }
 
   template <typename T>
   void insert(const string_ref_type& name, const T& value, typename details::enable_if< details::is_value_ref<T> >::type* = 0)
   {
     type_check<object_tag>();
-    value_->AddMember(name.data(), *alloc_, *value.get_native_value_pointer(), *alloc_);
+    value_->AddMember(rapidjson::StringRef(name.data(), name.length()), *value.get_native_value_pointer(), *alloc_);
   }
 
   bool erase(const string_ref_type& name)
@@ -716,7 +716,7 @@ public:
     if (!has(name))
     {
       native_value_type null;
-      value_->AddMember(name.data(), *alloc_, null, *alloc_);
+      value_->AddMember(rapidjson::StringRef(name.data(), name.length()), null, *alloc_);
     }
 
     return value_ref_type(&((*value_)[name.data()]), alloc_);
