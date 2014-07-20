@@ -109,6 +109,61 @@ namespace details {
   typedef bool_<true> true_;
   typedef bool_<false> false_;
 
+
+  template <typename T> struct remove_reference { typedef T type; };
+  template <typename T> struct remove_reference<T&> { typedef T type; };
+
+  template <typename T> struct remove_const { typedef T type; };
+  template <typename T> struct remove_const<const T> { typedef T type; };
+
+
+  template <typename Char, typename Traits = std::char_traits<Char> >
+  class basic_string_ref
+  {
+  public:
+    typedef Char value_type;
+    typedef std::size_t size_type;
+
+  private:
+    const value_type* data_;
+    size_type length_;
+
+  public:
+    basic_string_ref()
+      : data_(0)
+      , length_(0)
+    {}
+
+    basic_string_ref(const basic_string_ref& other)
+      : data_(other.data_)
+      , length_(other.length_)
+    {}
+
+    basic_string_ref(const value_type* str)
+      : data_(str)
+      , length_(Traits::length(str))
+    {}
+
+    basic_string_ref(const value_type* str, size_type length)
+      : data_(str)
+      , length_(length)
+    {}
+
+    template <typename Allocator>
+    basic_string_ref(const std::basic_string<value_type, Allocator>& other)
+      : data_(other.data())
+      , length_(other.length())
+    {}
+
+    size_type size() const     { return length_; }
+    size_type length() const   { return length_; }
+    size_type max_size() const { return length_; }
+    bool empty() const         { return length_ == 0; }
+
+    const value_type* data() const { return data_; }
+  };
+
+
   // type traits
   template <typename T> struct is_tag : false_ {};
   template <> struct is_tag<null_tag> : true_ {};
@@ -139,6 +194,7 @@ namespace details {
   template <typename T> struct is_string : false_ {};
   template <> struct is_string<string_tag> : true_ {};
   template <typename Char> struct is_string< std::basic_string<Char> > : true_ {};
+  template <typename Char, typename Traits> struct is_string< basic_string_ref<Char, Traits> > : true_ {};
 
   template <typename T> struct is_number : false_ {};
   template <> struct is_number<number_tag> : true_ {};
@@ -183,12 +239,6 @@ namespace details {
   template <typename T> const char* type_name(typename enable_if< is_double<T> >::type* = 0)      { return "double"; }
   template <typename T> const char* type_name(typename enable_if< is_value_ref<T> >::type* = 0)   { return "value_ref"; }
 
-
-  template <typename T> struct remove_reference { typedef T type; };
-  template <typename T> struct remove_reference<T&> { typedef T type; };
-
-  template <typename T> struct remove_const { typedef T type; };
-  template <typename T> struct remove_const<const T> { typedef T type; };
 
   template <typename PseudoReference>
   struct operator_arrow_proxy
@@ -468,6 +518,7 @@ public:
   typedef const basic_value_ref<const_traits>           const_value_ref_type;
   typedef typename encoding_type::Ch                    char_type;
   typedef std::basic_string<char_type>                  string_type;
+  typedef details::basic_string_ref<char_type>          string_ref_type;
   typedef native_allocator_type                         allocator_type;
 
 private:
@@ -512,7 +563,7 @@ public:
   void set(uint64_t value)            { value_->SetUint64(value); }
   void set(double value)              { value_->SetDouble(value); }
   void set(const char_type* value)    { value_->SetString(value, *alloc_); }
-  void set(const string_type& value)  { value_->SetString(value.c_str(), value.size(), *alloc_); }
+  void set(const string_type& value)  { value_->SetString(value.data(), value.length(), *alloc_); }
 
   template <typename T>
   void set(const T& value, typename details::enable_if< details::is_value_ref<T> >::type* = 0)
@@ -622,56 +673,56 @@ private:
 public:
   as_t as() const { return as_t(*this); }
 
-  bool has(const string_type& name) const
+  bool has(const string_ref_type& name) const
   {
     type_check<object_tag>();
-    return value_->HasMember(name.c_str());
+    return value_->HasMember(name.data());
   }
 
   template <typename T>
-  void insert(const string_type& name, const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0)
+  void insert(const string_ref_type& name, const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0)
   {
     type_check<object_tag>();
     native_value_type v(value);
-    value_->AddMember(name.c_str(), *alloc_, v, *alloc_);
+    value_->AddMember(name.data(), *alloc_, v, *alloc_);
   }
 
   template <typename T>
-  void insert(const string_type& name, const T& value, typename details::enable_if< details::is_value_ref<T> >::type* = 0)
+  void insert(const string_ref_type& name, const T& value, typename details::enable_if< details::is_value_ref<T> >::type* = 0)
   {
     type_check<object_tag>();
-    value_->AddMember(name.c_str(), *alloc_, *value.get_native_value_pointer(), *alloc_);
+    value_->AddMember(name.data(), *alloc_, *value.get_native_value_pointer(), *alloc_);
   }
 
-  bool erase(const string_type& name)
+  bool erase(const string_ref_type& name)
   {
     type_check<object_tag>();
-    return value_->RemoveMember(name.c_str());
+    return value_->RemoveMember(name.data());
   }
 
-  value_ref_type at(const string_type& name)
+  value_ref_type at(const string_ref_type& name)
   {
     type_check<object_tag>();
 
     if (!has(name))
     {
       native_value_type null;
-      value_->AddMember(name.c_str(), *alloc_, null, *alloc_);
+      value_->AddMember(name.data(), *alloc_, null, *alloc_);
     }
 
-    return value_ref_type(&((*value_)[name.c_str()]), alloc_);
+    return value_ref_type(&((*value_)[name.data()]), alloc_);
   }
 
-  const_value_ref_type at(const string_type& name) const
+  const_value_ref_type at(const string_ref_type& name) const
   {
     type_check<object_tag>();
     if (!has(name))
       throw std::out_of_range("not found");
-    return const_value_ref_type(&((*value_)[name.c_str()]), alloc_);
+    return const_value_ref_type(&((*value_)[name.data()]), alloc_);
   }
 
-  value_ref_type operator[](const string_type& name) { return at(name); }
-  const_value_ref_type operator[](const string_type& name) const { return at(name); }
+  value_ref_type operator[](const string_ref_type& name) { return at(name); }
+  const_value_ref_type operator[](const string_ref_type& name) const { return at(name); }
 
   member_iterator member_begin()
   {
@@ -886,6 +937,7 @@ public:
   typedef typename base_type::const_value_ref_type      const_value_ref_type;
   typedef typename base_type::char_type                 char_type;
   typedef typename base_type::string_type               string_type;
+  typedef typename base_type::string_ref_type           string_ref_type;
   typedef typename base_type::allocator_type            allocator_type;
 
   typedef typename base_type::member_iterator           member_iterator;
@@ -1008,6 +1060,7 @@ public:
   typedef typename base_type::const_value_ref_type      const_value_ref_type;
   typedef typename base_type::char_type                 char_type;
   typedef typename base_type::string_type               string_type;
+  typedef typename base_type::string_ref_type           string_ref_type;
   typedef typename base_type::allocator_type            allocator_type;
 
   typedef typename base_type::member_iterator           iterator;
@@ -1055,6 +1108,7 @@ public:
   typedef typename base_type::const_value_ref_type      const_value_ref_type;
   typedef typename base_type::char_type                 char_type;
   typedef typename base_type::string_type               string_type;
+  typedef typename base_type::string_ref_type           string_ref_type;
   typedef typename base_type::allocator_type            allocator_type;
 
   typedef typename base_type::value_iterator            iterator;
@@ -1119,6 +1173,7 @@ public:
   typedef typename base_type::const_value_ref_type      const_value_ref_type;
   typedef typename base_type::char_type                 char_type;
   typedef typename base_type::string_type               string_type;
+  typedef typename base_type::string_ref_type           string_ref_type;
   typedef typename base_type::allocator_type            allocator_type;
 
 private:
@@ -1137,26 +1192,15 @@ public:
     member_type::document_impl_.swap(other.document_impl_);
   }
 
-  void parse(const string_type& str)
-  {
-    parse<0>(str.c_str());
-  }
-
-  void parse(const char_type* str)
+  void parse(const string_ref_type& str)
   {
     parse<0>(str);
   }
 
   template <unsigned ParseFlags>
-  void parse(const string_type& str)
+  void parse(const string_ref_type& str)
   {
-    parse<ParseFlags>(str.c_str());
-  }
-
-  template <unsigned ParseFlags>
-  void parse(const char_type* str)
-  {
-    member_type::document_impl_->template Parse<ParseFlags>(str);
+    member_type::document_impl_->template Parse<ParseFlags>(str.data());
     if (member_type::document_impl_->HasParseError())
       throw parse_error(member_type::document_impl_->GetParseError());
   }
