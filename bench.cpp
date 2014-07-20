@@ -75,6 +75,23 @@ struct rapidjson_bench
   }
 };
 
+struct rabbit_bench
+{
+  std::string name() const { return "rabbit   "; }
+  void operator()(const std::string& json) const
+  {
+    rabbit::document doc;
+    try { doc.parse(json); } catch (...) { throw; }
+
+    rabbit::const_array children = doc["data"]["children"];
+    for (rabbit::array::const_iterator it = children.begin(); it != children.end(); ++it)
+    {
+      rabbit::const_object data = it->at("data");
+      print(data["score"].as(), data["title"].as(), data["url"].as());
+    }
+  }
+};
+
 struct picojson_bench
 {
   std::string name() const { return "picojson "; }
@@ -96,23 +113,6 @@ struct picojson_bench
   }
 };
 
-struct rabbit_bench
-{
-  std::string name() const { return "rabbit   "; }
-  void operator()(const std::string& json) const
-  {
-    rabbit::document doc;
-    try { doc.parse(json); } catch (...) { throw; }
-
-    rabbit::const_array children = doc["data"]["children"];
-    for (rabbit::array::const_iterator it = children.begin(); it != children.end(); ++it)
-    {
-      rabbit::const_object data = it->at("data");
-      print(data["score"].as(), data["title"].as(), data["url"].as());
-    }
-  }
-};
-
 int main(int argc, char** argv)
 {
   int n = 1000;
@@ -123,8 +123,8 @@ int main(int argc, char** argv)
   std::string json = std::string(it, last);
 
   runner<rapidjson_bench> r1(json);
-  runner<picojson_bench> r2(json);
-  runner<rabbit_bench> r3(json);
+  runner<rabbit_bench> r2(json);
+  runner<picojson_bench> r3(json);
 
   int i = 1;
   while (true)
