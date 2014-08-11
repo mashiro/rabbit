@@ -63,9 +63,8 @@ g++ -I. -O2 -o bench bench.cpp
 ### score
 
 ```
-30 trying...OK
-rapidjson score: 370425
-picojson  score: 2590521
-rabbit    score: 385049
+rapidjson score: 360644
+rabbit    score: 363334
+picojson  score: 2495122
 ```
 
