@@ -797,10 +797,18 @@ public:
   const_value_ref_type operator[](std::size_t index) const { return at(index); }
 
   template <typename T>
-  void push_back(const T& value)
+  void push_back(const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0)
   {
     type_check<array_tag>();
-    value_->PushBack(value, *alloc_);
+    native_value_type v(value);
+    value_->PushBack(v, *alloc_);
+  }
+
+  template <typename T>
+  void push_back(const T& value, typename details::enable_if< details::is_value_ref<T> >::type* = 0)
+  {
+    type_check<array_tag>();
+    value_->PushBack(*value.get_native_value_pointer(), *alloc_);
   }
 
   void pop_back()

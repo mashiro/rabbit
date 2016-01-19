@@ -49,14 +49,19 @@ BOOST_AUTO_TEST_CASE(push_back_test)
   rabbit::value v;
   BOOST_CHECK_THROW(v.size(), rabbit::type_mismatch);
 
+  rabbit::object o;
+  o["foo"] = 456;
+
   rabbit::array a;
   a.push_back(123);
   a.push_back(1.0);
   a.push_back("str");
-  BOOST_CHECK_EQUAL(a.size(), 3);
+  a.push_back(o);
+  BOOST_CHECK_EQUAL(a.size(), 4);
   BOOST_CHECK_EQUAL(a[0].as_int(), 123);
   BOOST_CHECK_CLOSE(a[1].as_double(), 1.0, 0.000001);
   BOOST_CHECK_EQUAL(a[2].as_string(), "str");
+  BOOST_CHECK_EQUAL(a[3]["foo"].as_int(), 456);
 }
 
 BOOST_AUTO_TEST_CASE(pop_back_test)
