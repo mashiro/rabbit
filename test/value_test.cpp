@@ -346,7 +346,6 @@ BOOST_AUTO_TEST_CASE(clear_test)
   BOOST_CHECK(v.is_int());
   v.clear();
   BOOST_CHECK(v.is_null());
-  std::cout << v.which() << std::endl;
 }
 
 BOOST_AUTO_TEST_CASE(swap_test)
