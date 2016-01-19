@@ -44,6 +44,7 @@ std::cout << root.str() << std::endl; // {"user":{"name":"yui","age":18}}
 
 ```bash
 mkdir build
+cd build
 cmake ..
 make
 make test
