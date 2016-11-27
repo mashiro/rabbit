@@ -380,7 +380,7 @@ namespace details {
         , alloc_(alloc)
       {}
 
-      string_type name() const { return value_ref_type(&(member_.name), alloc_).template as_string(); }
+      string_type name() const { return value_ref_type(&(member_.name), alloc_).as_string(); }
       value_ref_type value() const { return value_ref_type(&(member_.value), alloc_); }
     };
 
