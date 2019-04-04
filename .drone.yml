@@ -6,7 +6,8 @@ steps:
     image: debian
     commands:
       - apt-get update
-      - apt-get install -y g++ cmake libboost-test-dev
+      - apt-get install -y git g++ cmake libboost-test-dev
+      - git submodule update --init
       - mkdir build
       - cd build
       - cmake ..
