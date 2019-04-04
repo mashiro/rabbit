@@ -23,12 +23,12 @@ struct runner
 {
   Bench bench;
   std::string json;
-  int score;
+  int time;
   int try_count;
 
   runner(const std::string& json)
     : json(json)
-    , score(0)
+    , time(0)
     , try_count(0)
   {}
 
@@ -41,7 +41,7 @@ struct runner
       while (n-- > 0)
         bench(json);
 
-      score += (std::clock() - t);
+      time += (std::clock() - t);
     }
     catch (std::exception& e)
     {
@@ -53,7 +53,7 @@ struct runner
 
   void disp() const
   {
-    std::cout << bench.name() << " " << "score: " << (score / try_count) << std::endl;
+    std::cout << bench.name() << " " << "time: " << (time / try_count) << std::endl;
   }
 };
 

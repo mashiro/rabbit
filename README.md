@@ -57,15 +57,15 @@ make test
 
 ```bash
 wget "http://api.reddit.com/hot" -O hot.json
-g++ -I. -O2 -o bench bench.cpp
+g++ -I. -I./thirdparty/picojson/ -I./thirdparty/rapidjson/include/ -O2 -o bench bench.cpp
 ./bench 1000 2> /dev/null
 ```
 
 ### score
 
 ```
-rapidjson score: 360644
-rabbit    score: 363334
-picojson  score: 2495122
+rapidjson time: 834330
+rabbit    time: 837909
+picojson  time: 3418777
 ```
 
