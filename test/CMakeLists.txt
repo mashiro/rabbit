@@ -1,7 +1,10 @@
 add_definitions(-DBOOST_TEST_DYN_LINK)
 
 find_package(Boost COMPONENTS unit_test_framework REQUIRED)
-include_directories(${PROJECT_SOURCE_DIR})
+include_directories(
+    ${PROJECT_SOURCE_DIR}
+    ${Boost_INCLUDE_DIRS}
+)
 file(GLOB sources *.cpp)
 
 foreach(filename ${sources})
