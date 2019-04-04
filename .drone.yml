@@ -1,0 +1,15 @@
+kind: pipeline
+name: default
+
+steps:
+  - name: test
+    image: debian
+    commands:
+      - apt-get update
+      - apt-get install -y libboost-test-dev
+      - mkdir build
+      - cd build
+      - cmake ..
+      - make
+      - make test
+
