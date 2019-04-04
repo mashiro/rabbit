@@ -6,7 +6,7 @@ rabbit is a very handy rapidjson wrapper library.
 
 ## dependencies
 
-* [rapidjson](http://code.google.com/p/rapidjson/)
+* [rapidjson](https://github.com/Tencent/rapidjson)
 
 
 ## how to use
