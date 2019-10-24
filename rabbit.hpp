@@ -585,6 +585,8 @@ public:
     else if (value.is_uint64()) set(value.as_uint64());
     else if (value.is_double()) set(value.as_double());
     else if (value.is_string()) set(value.as_string());
+    else if (value.is_array()) throw std::runtime_error("can not assign array directly. please use insert");
+    else if (value.is_object()) throw std::runtime_error("can not assign object directly. please use insert");
   }
 
   template <typename T>
