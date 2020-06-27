@@ -792,7 +792,7 @@ public:
   {
     type_check<array_tag>();
     range_check(index);
-    return const_value_ref_type(&((*value_)[index]), *alloc_);
+    return const_value_ref_type(&((*value_)[index]), alloc_);
   }
 
   value_ref_type operator[](std::size_t index) { return at(index); }
