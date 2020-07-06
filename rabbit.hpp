@@ -987,7 +987,7 @@ public:
   template <typename Tag>
   basic_value(Tag tag, allocator_type& alloc, typename details::enable_if< details::is_tag<Tag> >::type* = 0)
     : member_type(new native_value_type(Tag::native_value))
-    , base_type(member_type::value_impl_.get(), member_type::alloc_impl_.get())
+    , base_type(member_type::value_impl_.get(), &alloc)
   {}
 
   template <typename T>
