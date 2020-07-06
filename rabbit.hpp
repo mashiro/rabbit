@@ -735,6 +735,13 @@ public:
   value_ref_type operator[](const string_ref_type& name) { return at(name); }
   const_value_ref_type operator[](const string_ref_type& name) const { return at(name); }
 
+
+  size_t member_count() const
+  {
+    type_check<object_tag>();
+    return value_->MemberCount();
+  }
+
   member_iterator member_begin()
   {
     type_check<object_tag>();

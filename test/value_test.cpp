@@ -434,3 +434,15 @@ BOOST_AUTO_TEST_CASE(root_value_test)
   BOOST_CHECK_THROW(rabbit::value u2 = v, std::runtime_error);
 }
 
+BOOST_AUTO_TEST_CASE(member_count){
+  rabbit::object v;
+  v["test"] = 1;
+  v["abc"] = 2;
+
+
+  BOOST_CHECK(v.member_count() == 2);
+  v["qqq"] = 3;
+  BOOST_CHECK(v.member_count() == 3);
+  v.erase("abc");
+  BOOST_CHECK(v.member_count() == 2);
+}
