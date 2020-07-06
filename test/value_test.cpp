@@ -340,6 +340,52 @@ BOOST_AUTO_TEST_SUITE(as_test) // {{{
   }
 BOOST_AUTO_TEST_SUITE_END() // }}}
 
+
+BOOST_AUTO_TEST_CASE(value_construct_by_value_test){
+  {
+    rabbit::value v1(123);
+    BOOST_CHECK(v1.is_int());
+
+    rabbit::value::allocator_type a;
+    rabbit::value v2(123, a);
+    BOOST_CHECK(v2.is_int());
+  }
+
+  {
+    rabbit::value v1("abc");
+    BOOST_CHECK(v1.is_string());
+
+    rabbit::value::allocator_type a;
+    rabbit::value v2("abc", a);
+    BOOST_CHECK(v2.is_string());
+  }
+
+  {
+    rabbit::value v1(123.5);
+    BOOST_CHECK(v1.is_double());
+
+    rabbit::value::allocator_type a;
+    rabbit::value v2(123.5, a);
+    BOOST_CHECK(v2.is_double());
+  }
+
+
+}
+
+
+
+
+BOOST_AUTO_TEST_CASE(value_construct_by_tag_test){
+  rabbit::value v1((rabbit::object_tag())); //Extra parens for most vexing parse
+  BOOST_CHECK(v1.is_object());
+
+  rabbit::value::allocator_type a;
+  rabbit::value v2((rabbit::object_tag()), a);
+  BOOST_CHECK(v2.is_object());
+}
+
+
+
 BOOST_AUTO_TEST_CASE(clear_test)
 {
   rabbit::value v(123);

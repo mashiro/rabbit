@@ -986,18 +986,18 @@ public:
 
   template <typename Tag>
   basic_value(Tag tag, allocator_type& alloc, typename details::enable_if< details::is_tag<Tag> >::type* = 0)
-    : member_type(new native_value_type(Tag::native_value), &alloc)
+    : member_type(new native_value_type(Tag::native_value))
     , base_type(member_type::value_impl_.get(), member_type::alloc_impl_.get())
   {}
 
   template <typename T>
-  basic_value(const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0)
+  basic_value(const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_tag<T> >::type* = 0)
     : member_type(new native_value_type(value), new allocator_type())
     , base_type(member_type::value_impl_.get(), member_type::alloc_impl_.get())
   {}
 
   template <typename T>
-  basic_value(const T& value, allocator_type& alloc, typename details::disable_if< details::is_value_ref<T> >::type* = 0)
+  basic_value(const T& value, allocator_type& alloc, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_tag<T> >::type* = 0)
     : member_type(new native_value_type(value))
     , base_type(member_type::value_impl_.get(), &alloc)
   {}
