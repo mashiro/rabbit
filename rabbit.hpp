@@ -589,6 +589,13 @@ public:
     else if (value.is_object()) throw std::runtime_error("can not assign object directly. please use insert");
   }
 
+  template <typename OtherTraits> 
+  void deep_copy(const basic_value_ref<OtherTraits>& other)
+  {
+    value_->CopyFrom(*other.get_native_value_pointer(), *alloc_);
+  }
+
+
   template <typename T>
   value_ref_type& operator=(const T& value)
   {

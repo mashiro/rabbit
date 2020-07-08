@@ -434,3 +434,89 @@ BOOST_AUTO_TEST_CASE(root_value_test)
   BOOST_CHECK_THROW(rabbit::value u2 = v, std::runtime_error);
 }
 
+
+BOOST_AUTO_TEST_CASE(deep_copy_simple_test)
+{
+  rabbit::value v(123);
+  BOOST_CHECK(v.is_int());
+  BOOST_CHECK(v.as_int() == 123);
+
+  rabbit::value v2;
+  v2.deep_copy(v);
+  BOOST_CHECK(v2.is_int());
+  BOOST_CHECK(v2.as_int() == 123);
+
+  v.set(123.45);
+  BOOST_CHECK(v.is_double());
+  BOOST_CHECK(v.as_double() == 123.45);
+  BOOST_CHECK(v2.is_int());
+  BOOST_CHECK(v2.as_int() == 123);
+}
+
+BOOST_AUTO_TEST_CASE(deep_copy_complex_test)
+{
+  rabbit::value v((rabbit::object_tag()));
+
+  v["test"] = 123;
+  v["abc"] = 4.56;
+
+  BOOST_CHECK(v.is_object());
+  BOOST_CHECK(v["test"].is_int());
+  BOOST_CHECK(v["abc"].is_double());
+
+  rabbit::value v2;
+  v2.deep_copy(v);
+
+
+  BOOST_CHECK(v2.is_object());
+  BOOST_CHECK(v2["test"].is_int());
+  BOOST_CHECK(v2["abc"].is_double());
+
+  v.set(rabbit::null_tag());
+  
+  BOOST_CHECK(v.is_null());
+
+
+  BOOST_CHECK(v2.is_object());
+  BOOST_CHECK(v2["test"].is_int());
+  BOOST_CHECK(v2["abc"].is_double());
+
+
+}
+
+BOOST_AUTO_TEST_CASE(deep_copy_const_value)
+{
+  rabbit::value v((rabbit::object_tag()));
+
+  v["test"] = 123;
+  v["abc"] = 4.56;
+
+  BOOST_CHECK(v.is_object());
+  BOOST_CHECK(v["test"].is_int());
+  BOOST_CHECK(v["abc"].is_double());
+
+
+
+  rabbit::const_value v_const = v;
+
+  rabbit::value v2;
+  v2.deep_copy(v_const);
+
+
+  BOOST_CHECK(v2.is_object());
+  BOOST_CHECK(v2["test"].is_int());
+  BOOST_CHECK(v2["abc"].is_double());
+
+  v.set(rabbit::null_tag());
+  
+  BOOST_CHECK(v.is_null());
+  BOOST_CHECK(v_const.is_null());
+
+
+  BOOST_CHECK(v2.is_object());
+  BOOST_CHECK(v2["test"].is_int());
+  BOOST_CHECK(v2["abc"].is_double());
+
+
+
+}
