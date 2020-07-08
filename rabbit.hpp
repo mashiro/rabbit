@@ -735,13 +735,6 @@ public:
   value_ref_type operator[](const string_ref_type& name) { return at(name); }
   const_value_ref_type operator[](const string_ref_type& name) const { return at(name); }
 
-
-  size_t member_count() const
-  {
-    type_check<object_tag>();
-    return value_->MemberCount();
-  }
-
   member_iterator member_begin()
   {
     type_check<object_tag>();
@@ -772,8 +765,12 @@ public:
 
   std::size_t size() const
   {
-    type_check<array_tag>();
-    return value_->Size();
+    if(is_object()){
+      return value_->MemberCount();
+    }else if(is_array()){
+      return value_->Size();
+    }
+    throw std::runtime_error("Cannot take size of non-object/array");
   }
 
   std::size_t capacity() const
