@@ -5,7 +5,7 @@
 BOOST_AUTO_TEST_CASE(size_test)
 {
   rabbit::value v;
-  BOOST_CHECK_THROW(v.size(), std::runtime_error);
+  BOOST_CHECK_THROW(v.size(), rabbit::type_mismatch);
 
   rabbit::array a;
   BOOST_CHECK_EQUAL(a.size(), 0);
@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(at_test)
 BOOST_AUTO_TEST_CASE(push_back_test)
 {
   rabbit::value v;
-  BOOST_CHECK_THROW(v.size(), std::runtime_error);
+  BOOST_CHECK_THROW(v.size(), rabbit::type_mismatch);
 
   rabbit::object o;
   o["foo"] = 456;

@@ -770,7 +770,7 @@ public:
     }else if(is_array()){
       return value_->Size();
     }
-    throw std::runtime_error("Cannot take size of non-object/array");
+    throw rabbit::type_mismatch("Cannot take size of non-object/array");
   }
 
   std::size_t capacity() const
