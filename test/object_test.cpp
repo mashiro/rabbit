@@ -127,3 +127,15 @@ BOOST_AUTO_TEST_CASE(assign_test)
   BOOST_CHECK_EQUAL(o["user"]["age"].get_allocator_pointer(), u["age"].get_allocator_pointer());
 }
 
+BOOST_AUTO_TEST_CASE(member_size_test){
+  rabbit::object v;
+  v["test"] = 1;
+  v["abc"] = 2;
+
+
+  BOOST_CHECK(v.size() == 2);
+  v["qqq"] = 3;
+  BOOST_CHECK(v.size() == 3);
+  v.erase("abc");
+  BOOST_CHECK(v.size() == 2);
+}

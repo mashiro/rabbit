@@ -772,8 +772,12 @@ public:
 
   std::size_t size() const
   {
-    type_check<array_tag>();
-    return value_->Size();
+    if(is_object()){
+      return value_->MemberCount();
+    }else if(is_array()){
+      return value_->Size();
+    }
+    throw rabbit::type_mismatch("Cannot take size of non-object/array");
   }
 
   std::size_t capacity() const
