@@ -769,15 +769,14 @@ public:
   const_member_iterator member_cbegin() const { return member_begin(); }
   const_member_iterator member_cend() const { return member_end(); }
 
-
   std::size_t size() const
   {
-    if(is_object()){
+    if (is_object()) {
       return value_->MemberCount();
-    }else if(is_array()){
+    } else if (is_array()) {
       return value_->Size();
     }
-    throw rabbit::type_mismatch("Cannot take size of non-object/array");
+    throw type_mismatch("cannot take size of non-object/array");
   }
 
   std::size_t capacity() const
