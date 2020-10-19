@@ -718,6 +718,37 @@ public:
     return value_->RemoveMember(name.data());
   }
 
+
+  void erase(const const_member_iterator& itr){
+    type_check<object_tag>();
+    value_->EraseMember(itr.base());
+  }
+
+  void erase(const member_iterator& itr){
+    type_check<object_tag>();
+    value_->EraseMember(itr.base());
+  }
+
+  void erase(const const_value_iterator& itr){
+    type_check<array_tag>();
+    value_->Erase(itr.base());
+  }
+
+  void erase(const const_value_iterator& beginItr, const const_value_iterator& endItr){
+    type_check<array_tag>();
+    value_->Erase(beginItr.base(), endItr.base());
+  }
+
+  void erase(const value_iterator& itr){
+    type_check<array_tag>();
+    value_->Erase(itr.base());
+  }
+
+  void erase(const value_iterator& beginItr, const value_iterator& endItr){
+    type_check<array_tag>();
+    value_->Erase(beginItr.base(), endItr.base());
+  }
+
   value_ref_type at(const string_ref_type& name)
   {
     type_check<object_tag>();
