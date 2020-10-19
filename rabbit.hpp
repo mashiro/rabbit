@@ -719,34 +719,34 @@ public:
   }
 
 
-  void erase(const const_member_iterator& itr){
+  const_member_iterator erase(const const_member_iterator& itr){
     type_check<object_tag>();
-    value_->EraseMember(itr.base());
+    return details::make_transform_iterator(value_->EraseMember(itr.base()), const_member_wrapper_type(alloc_));
   }
 
-  void erase(const member_iterator& itr){
+  member_iterator erase(const member_iterator& itr){
     type_check<object_tag>();
-    value_->EraseMember(itr.base());
+    return details::make_transform_iterator(value_->EraseMember(itr.base()), member_wrapper_type(alloc_));
   }
 
-  void erase(const const_value_iterator& itr){
+  const_value_iterator erase(const const_value_iterator& itr){
     type_check<array_tag>();
-    value_->Erase(itr.base());
+    return details::make_transform_iterator(value_->Erase(itr.base()), const_value_wrapper_type(alloc_));
   }
 
-  void erase(const const_value_iterator& beginItr, const const_value_iterator& endItr){
+  const_value_iterator erase(const const_value_iterator& beginItr, const const_value_iterator& endItr){
     type_check<array_tag>();
-    value_->Erase(beginItr.base(), endItr.base());
+    return details::make_transform_iterator(value_->Erase(beginItr.base(), endItr.base()), const_value_wrapper_type(alloc_));
   }
 
-  void erase(const value_iterator& itr){
+  value_iterator erase(const value_iterator& itr){
     type_check<array_tag>();
-    value_->Erase(itr.base());
+    return details::make_transform_iterator(value_->Erase(itr.base()), value_wrapper_type(alloc_));
   }
 
-  void erase(const value_iterator& beginItr, const value_iterator& endItr){
+  value_iterator erase(const value_iterator& beginItr, const value_iterator& endItr){
     type_check<array_tag>();
-    value_->Erase(beginItr.base(), endItr.base());
+    return details::make_transform_iterator(value_->Erase(beginItr.base(), endItr.base()), value_wrapper_type(alloc_));
   }
 
   value_ref_type at(const string_ref_type& name)
