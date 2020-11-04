@@ -83,6 +83,63 @@ BOOST_AUTO_TEST_CASE(pop_back_test)
   BOOST_CHECK_EQUAL(a.at(a.size() - 1).as_int(), 1);
 }
 
+
+BOOST_AUTO_TEST_CASE(erase_itr){
+  rabbit::array a;
+  a.push_back(1);
+  a.push_back(2);
+  a.push_back(3);
+  BOOST_CHECK_EQUAL(a.size(), 3);
+
+  rabbit::array::value_iterator itr = a.erase(++a.value_begin());
+  BOOST_CHECK_EQUAL(a.size(), 2);
+  BOOST_CHECK_EQUAL(a[0].as_int(), 1);
+  BOOST_CHECK_EQUAL(a[1].as_int(), 3);
+  BOOST_CHECK(itr == (a.begin()+1)); //Can't use equal here because equal tries to print iterators which isn't defined
+}
+
+BOOST_AUTO_TEST_CASE(erase_itr_range){
+  rabbit::array a;
+  a.push_back(1);
+  a.push_back(2);
+  a.push_back(3);
+  BOOST_CHECK_EQUAL(a.size(), 3);
+
+  rabbit::array::value_iterator itr = a.erase(a.value_begin()+1, a.value_end());
+  BOOST_CHECK_EQUAL(a.size(), 1);
+  BOOST_CHECK_EQUAL(a[0].as_int(), 1);
+  BOOST_CHECK(itr == a.end()); //Can't use equal here because equal tries to print iterators which isn't defined
+}
+
+
+BOOST_AUTO_TEST_CASE(erase_const_itr){
+  rabbit::array a;
+  a.push_back(1);
+  a.push_back(2);
+  a.push_back(3);
+  BOOST_CHECK_EQUAL(a.size(), 3);
+
+  rabbit::array::const_value_iterator itr = a.erase(++a.value_cbegin());
+  BOOST_CHECK_EQUAL(a.size(), 2);
+  BOOST_CHECK_EQUAL(a[0].as_int(), 1);
+  BOOST_CHECK_EQUAL(a[1].as_int(), 3);
+  BOOST_CHECK(itr == (a.begin()+1)); //Can't use equal here because equal tries to print iterators which isn't defined
+}
+
+BOOST_AUTO_TEST_CASE(erase_const_itr_range){
+  rabbit::array a;
+  a.push_back(1);
+  a.push_back(2);
+  a.push_back(3);
+  BOOST_CHECK_EQUAL(a.size(), 3);
+
+  rabbit::array::const_value_iterator itr = a.erase(a.value_cbegin()+1, a.value_cend());
+  BOOST_CHECK_EQUAL(a.size(), 1);
+  BOOST_CHECK_EQUAL(a[0].as_int(), 1);
+  BOOST_CHECK(itr == a.end()); //Can't use equal here because equal tries to print iterators which isn't defined
+}
+
+
 BOOST_AUTO_TEST_CASE(iterator_test)
 {
   rabbit::array a;

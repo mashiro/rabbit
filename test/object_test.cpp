@@ -40,6 +40,34 @@ BOOST_AUTO_TEST_CASE(erase_test)
   BOOST_CHECK(!o.erase("foo"));
 }
 
+BOOST_AUTO_TEST_CASE(erase_itr)
+{
+  rabbit::value v;
+  BOOST_CHECK_THROW(v.erase("foo"), rabbit::type_mismatch);
+
+  rabbit::object o;
+  o["foo"] = 123;
+  BOOST_CHECK(o.has("foo"));
+  rabbit::object::member_iterator itr = o.erase(o.begin());
+  BOOST_CHECK(!o.has("foo"));
+  BOOST_CHECK(!o.erase("foo"));
+  BOOST_CHECK(itr == o.end());
+}
+
+BOOST_AUTO_TEST_CASE(erase_const_itr)
+{
+  rabbit::value v;
+  BOOST_CHECK_THROW(v.erase("foo"), rabbit::type_mismatch);
+
+  rabbit::object o;
+  o["foo"] = 123;
+  BOOST_CHECK(o.has("foo"));
+  rabbit::object::const_member_iterator itr = o.erase(o.cbegin());
+  BOOST_CHECK(!o.has("foo"));
+  BOOST_CHECK(!o.erase("foo"));
+  BOOST_CHECK(itr == o.end());
+}
+
 BOOST_AUTO_TEST_CASE(at_test)
 {
   rabbit::object o;
