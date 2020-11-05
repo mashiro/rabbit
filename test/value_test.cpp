@@ -1,7 +1,6 @@
 #define BOOST_TEST_MODULE value_test
 #include <boost/test/unit_test.hpp>
 #include <rabbit.hpp>
-#include <iostream>
 
 BOOST_AUTO_TEST_SUITE(is_test) // {{{
   BOOST_AUTO_TEST_CASE(null_test)

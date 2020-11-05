@@ -28,7 +28,6 @@
 #ifndef RABBIT_NAMESPACE
 #define RABBIT_NAMESPACE rabbit
 #endif
-#include <iostream>
 
 #include <string>
 #include <stdexcept>
