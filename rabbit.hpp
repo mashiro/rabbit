@@ -704,7 +704,24 @@ public:
   }
 
   template <typename T>
-  void insert(const string_ref_type& name, const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0)
+  void insert(const string_ref_type& name, const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::enable_if< details::is_string<T> >::type * = 0)
+  {
+    type_check<object_tag>();
+    native_value_type v(value.data(), value.length(), *alloc_);
+    value_->AddMember(rapidjson::StringRef(name.data(), name.length()), v, *alloc_);
+  }
+
+  template <typename T>
+  void insert(const string_ref_type& name, const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::enable_if< details::is_cstr_ptr<T> >::type * = 0)
+  {
+    type_check<object_tag>();
+    native_value_type v(value, *alloc_);
+    value_->AddMember(rapidjson::StringRef(name.data(), name.length()), v, *alloc_);
+  }
+
+
+  template <typename T>
+  void insert(const string_ref_type& name, const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_string<T> >::type * = 0, typename details::disable_if< details::is_cstr_ptr<T> >::type * = 0)
   {
     type_check<object_tag>();
     native_value_type v(value);

@@ -551,3 +551,25 @@ BOOST_AUTO_TEST_CASE(value_create_by_op_eq_string){
   free(cs);
   BOOST_CHECK(v3.as_string() == "abcde");
 }
+
+
+
+BOOST_AUTO_TEST_CASE(value_insert_string){
+  rabbit::object v;
+  v.insert("abc", "def");
+  BOOST_CHECK(v["abc"].as_string() == "def");
+
+
+  std::string s("stringTest");
+  v.insert("ghi", s);
+  BOOST_CHECK(v["ghi"].as_string() == s);
+
+
+  char * cs = (char *) calloc(sizeof(char), 10);
+  memcpy(cs, "abcde", 5);
+  v.insert("xyz", cs);
+  free(cs);
+
+  BOOST_CHECK(v["xyz"].as_string() == "abcde");
+
+}
