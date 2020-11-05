@@ -28,6 +28,7 @@
 #ifndef RABBIT_NAMESPACE
 #define RABBIT_NAMESPACE rabbit
 #endif
+#include <iostream>
 
 #include <string>
 #include <stdexcept>
@@ -204,6 +205,12 @@ namespace details {
   template <> struct is_string<string_tag> : true_ {};
   template <typename Char> struct is_string< std::basic_string<Char> > : true_ {};
   template <typename Char, typename Traits> struct is_string< basic_string_ref<Char, Traits> > : true_ {};
+
+  template <typename T> struct is_cstr_ptr : false_ {};
+  template <> struct is_cstr_ptr< char * > : true_ {};
+  template <> struct is_cstr_ptr< const char * > : true_ {};
+  template <> struct is_cstr_ptr< wchar_t * > : true_ {};
+  template <> struct is_cstr_ptr< const wchar_t * > : true_ {};
 
   template <typename T> struct is_number : false_ {};
   template <> struct is_number<number_tag> : true_ {};
@@ -718,6 +725,10 @@ public:
     return value_->RemoveMember(name.data());
   }
 
+  void reserve(const size_t reserve_size){
+    type_check<array_tag>();
+    value_->Reserve(reserve_size, *alloc_);
+  }
 
   const_member_iterator erase(const const_member_iterator& itr){
     type_check<object_tag>();
@@ -840,7 +851,23 @@ public:
   const_value_ref_type operator[](std::size_t index) const { return at(index); }
 
   template <typename T>
-  void push_back(const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0)
+  void push_back(const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::enable_if< details::is_string<T> >::type * = 0)
+  {
+    type_check<array_tag>();
+    native_value_type v(value.data(), value.length(), *alloc_);
+    value_->PushBack(v, *alloc_);
+  }
+
+  template <typename T>
+  void push_back(const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::enable_if< details::is_cstr_ptr<T> >::type * = 0)
+  {
+    type_check<array_tag>();
+    native_value_type v(value, *alloc_);
+    value_->PushBack(v, *alloc_);
+  }
+
+  template <typename T>
+  void push_back(const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_string<T> >::type * = 0, typename details::disable_if< details::is_cstr_ptr<T> >::type * = 0)
   {
     type_check<array_tag>();
     native_value_type v(value);
@@ -1019,6 +1046,10 @@ public:
     , base_type(member_type::value_impl_.get(), &alloc)
   {}
 
+
+  /*
+   *        Tag based constructors  
+   */
   template <typename Tag>
   basic_value(Tag tag, typename details::enable_if< details::is_tag<Tag> >::type* = 0)
     : member_type(new native_value_type(Tag::native_value), new allocator_type())
@@ -1031,15 +1062,54 @@ public:
     , base_type(member_type::value_impl_.get(), &alloc)
   {}
 
+
+  /*
+   *        Value based constructors
+   */
   template <typename T>
-  basic_value(const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_tag<T> >::type* = 0)
+  basic_value(const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_tag<T> >::type* = 0, typename details::disable_if< details::is_string<T> >::type* = 0, typename details::disable_if< details::is_cstr_ptr<T> >::type* = 0)
     : member_type(new native_value_type(value), new allocator_type())
     , base_type(member_type::value_impl_.get(), member_type::alloc_impl_.get())
   {}
 
+  //Special handling for string types because to copy a string type we need to provide an allocator, but we don't have an allocator till we are part way through construction
   template <typename T>
-  basic_value(const T& value, allocator_type& alloc, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_tag<T> >::type* = 0)
+  basic_value(const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_tag<T> >::type* = 0, typename details::enable_if< details::is_string<T> >::type* = 0)
+    : member_type(new native_value_type(null_tag::native_value), new allocator_type())
+    , base_type(member_type::value_impl_.get(), member_type::alloc_impl_.get())
+  {
+    base_type::set(value);
+  }
+
+  //Special handling for string types because to copy a string type we need to provide an allocator, but we don't have an allocator till we are part way through construction
+  template <typename T>
+  basic_value(const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_tag<T> >::type* = 0, typename details::enable_if<details::is_cstr_ptr<T> >::type* = 0)
+    : member_type(new native_value_type(null_tag::native_value), new allocator_type())
+    , base_type(member_type::value_impl_.get(), member_type::alloc_impl_.get())
+  {
+    base_type::set(value);
+  }
+
+  /*
+   *        Value based constructors WITH an external allocator
+   */
+  template <typename T>
+  basic_value(const T& value, allocator_type& alloc, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_tag<T> >::type* = 0, typename details::disable_if< details::is_string<T> >::type* = 0, typename details::disable_if< details::is_cstr_ptr<T> >::type* = 0)
     : member_type(new native_value_type(value))
+    , base_type(member_type::value_impl_.get(), &alloc)
+  {}
+
+  //Special handling to make sure we copy strings with the given allocator
+  template <typename T>
+  basic_value(const T& value, allocator_type& alloc, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_tag<T> >::type* = 0, typename details::enable_if< details::is_string<T> >::type* = 0)
+    : member_type(new native_value_type(value, alloc))
+    , base_type(member_type::value_impl_.get(), &alloc)
+  {}
+
+  //Special handling to make sure we copy strings with the given allocator
+  template <typename T>
+  basic_value(const T& value, allocator_type& alloc, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_tag<T> >::type* = 0, typename details::enable_if< details::is_cstr_ptr<T> >::type* = 0)
+    : member_type(new native_value_type(value, alloc))
     , base_type(member_type::value_impl_.get(), &alloc)
   {}
 

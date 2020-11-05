@@ -1,6 +1,7 @@
 #define BOOST_TEST_MODULE value_test
 #include <boost/test/unit_test.hpp>
 #include <rabbit.hpp>
+#include <iostream>
 
 BOOST_AUTO_TEST_SUITE(is_test) // {{{
   BOOST_AUTO_TEST_CASE(null_test)
@@ -519,4 +520,35 @@ BOOST_AUTO_TEST_CASE(deep_copy_const_value)
 
 
 
+}
+
+BOOST_AUTO_TEST_CASE(value_create_by_string){
+  rabbit::value v1("str");
+  BOOST_CHECK(v1.as_string() == "str");
+  std::string s("Some really long string that shouldn't actually fit into short string optimizations in the rapidjson library.");
+  rabbit::value v2(s);
+  BOOST_CHECK(v2.as_string() == s);
+
+
+  char * cs = (char *) calloc(sizeof(char), 10);
+  memcpy(cs, "abcde", 5);
+  rabbit::value v3(cs);
+  free(cs);
+  BOOST_CHECK(v3.as_string() == "abcde");
+}
+
+
+BOOST_AUTO_TEST_CASE(value_create_by_op_eq_string){
+  rabbit::value v1 = "str";
+  BOOST_CHECK(v1.as_string() == "str");
+  std::string s("Some really long string that shouldn't actually fit into short string optimizations in the rapidjson library.");
+  rabbit::value v2 = s;
+  BOOST_CHECK(v2.as_string() == s);
+
+
+  char * cs = (char *) calloc(sizeof(char), 10);
+  memcpy(cs, "abcde", 5);
+  rabbit::value v3 = cs;
+  free(cs);
+  BOOST_CHECK(v3.as_string() == "abcde");
 }
