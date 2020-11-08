@@ -176,3 +176,20 @@ BOOST_AUTO_TEST_CASE(const_iterator_test)
   }
 }
 
+BOOST_AUTO_TEST_CASE(push_back_strings){
+  rabbit::array a;
+  a.push_back("abc");
+
+  std::string s("some sort of string");
+  a.push_back(s); 
+
+  char * cs = (char *) calloc(sizeof(char), 4);
+  memcpy(cs, "def", 4);
+  a.push_back(cs);
+
+
+  BOOST_CHECK(a.size() == 3);
+  BOOST_CHECK(a[0].as_string() == "abc");
+  BOOST_CHECK(a[1].as_string() == s);
+  BOOST_CHECK(a[2].as_string() == "def");
+}

@@ -520,3 +520,56 @@ BOOST_AUTO_TEST_CASE(deep_copy_const_value)
 
 
 }
+
+BOOST_AUTO_TEST_CASE(value_create_by_string){
+  rabbit::value v1("str");
+  BOOST_CHECK(v1.as_string() == "str");
+  std::string s("Some really long string that shouldn't actually fit into short string optimizations in the rapidjson library.");
+  rabbit::value v2(s);
+  BOOST_CHECK(v2.as_string() == s);
+
+
+  char * cs = (char *) calloc(sizeof(char), 10);
+  memcpy(cs, "abcde", 5);
+  rabbit::value v3(cs);
+  free(cs);
+  BOOST_CHECK(v3.as_string() == "abcde");
+}
+
+
+BOOST_AUTO_TEST_CASE(value_create_by_op_eq_string){
+  rabbit::value v1 = "str";
+  BOOST_CHECK(v1.as_string() == "str");
+  std::string s("Some really long string that shouldn't actually fit into short string optimizations in the rapidjson library.");
+  rabbit::value v2 = s;
+  BOOST_CHECK(v2.as_string() == s);
+
+
+  char * cs = (char *) calloc(sizeof(char), 10);
+  memcpy(cs, "abcde", 5);
+  rabbit::value v3 = cs;
+  free(cs);
+  BOOST_CHECK(v3.as_string() == "abcde");
+}
+
+
+
+BOOST_AUTO_TEST_CASE(value_insert_string){
+  rabbit::object v;
+  v.insert("abc", "def");
+  BOOST_CHECK(v["abc"].as_string() == "def");
+
+
+  std::string s("stringTest");
+  v.insert("ghi", s);
+  BOOST_CHECK(v["ghi"].as_string() == s);
+
+
+  char * cs = (char *) calloc(sizeof(char), 10);
+  memcpy(cs, "abcde", 5);
+  v.insert("xyz", cs);
+  free(cs);
+
+  BOOST_CHECK(v["xyz"].as_string() == "abcde");
+
+}
