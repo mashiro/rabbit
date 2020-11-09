@@ -40,6 +40,34 @@ BOOST_AUTO_TEST_CASE(erase_test)
   BOOST_CHECK(!o.erase("foo"));
 }
 
+BOOST_AUTO_TEST_CASE(erase_itr)
+{
+  rabbit::value v;
+  BOOST_CHECK_THROW(v.erase("foo"), rabbit::type_mismatch);
+
+  rabbit::object o;
+  o["foo"] = 123;
+  BOOST_CHECK(o.has("foo"));
+  rabbit::object::member_iterator itr = o.erase(o.begin());
+  BOOST_CHECK(!o.has("foo"));
+  BOOST_CHECK(!o.erase("foo"));
+  BOOST_CHECK(itr == o.end());
+}
+
+BOOST_AUTO_TEST_CASE(erase_const_itr)
+{
+  rabbit::value v;
+  BOOST_CHECK_THROW(v.erase("foo"), rabbit::type_mismatch);
+
+  rabbit::object o;
+  o["foo"] = 123;
+  BOOST_CHECK(o.has("foo"));
+  rabbit::object::const_member_iterator itr = o.erase(o.cbegin());
+  BOOST_CHECK(!o.has("foo"));
+  BOOST_CHECK(!o.erase("foo"));
+  BOOST_CHECK(itr == o.end());
+}
+
 BOOST_AUTO_TEST_CASE(at_test)
 {
   rabbit::object o;
@@ -127,3 +155,15 @@ BOOST_AUTO_TEST_CASE(assign_test)
   BOOST_CHECK_EQUAL(o["user"]["age"].get_allocator_pointer(), u["age"].get_allocator_pointer());
 }
 
+BOOST_AUTO_TEST_CASE(member_size_test){
+  rabbit::object v;
+  v["test"] = 1;
+  v["abc"] = 2;
+
+
+  BOOST_CHECK(v.size() == 2);
+  v["qqq"] = 3;
+  BOOST_CHECK(v.size() == 3);
+  v.erase("abc");
+  BOOST_CHECK(v.size() == 2);
+}

@@ -205,6 +205,12 @@ namespace details {
   template <typename Char> struct is_string< std::basic_string<Char> > : true_ {};
   template <typename Char, typename Traits> struct is_string< basic_string_ref<Char, Traits> > : true_ {};
 
+  template <typename T> struct is_cstr_ptr : false_ {};
+  template <> struct is_cstr_ptr< char * > : true_ {};
+  template <> struct is_cstr_ptr< const char * > : true_ {};
+  template <> struct is_cstr_ptr< wchar_t * > : true_ {};
+  template <> struct is_cstr_ptr< const wchar_t * > : true_ {};
+
   template <typename T> struct is_number : false_ {};
   template <> struct is_number<number_tag> : true_ {};
 
@@ -698,7 +704,24 @@ public:
   }
 
   template <typename T>
-  void insert(const string_ref_type& name, const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0)
+  void insert(const string_ref_type& name, const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::enable_if< details::is_string<T> >::type * = 0)
+  {
+    type_check<object_tag>();
+    native_value_type v(value.data(), value.length(), *alloc_);
+    value_->AddMember(rapidjson::StringRef(name.data(), name.length()), v, *alloc_);
+  }
+
+  template <typename T>
+  void insert(const string_ref_type& name, const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::enable_if< details::is_cstr_ptr<T> >::type * = 0)
+  {
+    type_check<object_tag>();
+    native_value_type v(value, *alloc_);
+    value_->AddMember(rapidjson::StringRef(name.data(), name.length()), v, *alloc_);
+  }
+
+
+  template <typename T>
+  void insert(const string_ref_type& name, const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_string<T> >::type * = 0, typename details::disable_if< details::is_cstr_ptr<T> >::type * = 0)
   {
     type_check<object_tag>();
     native_value_type v(value);
@@ -716,6 +739,41 @@ public:
   {
     type_check<object_tag>();
     return value_->RemoveMember(name.data());
+  }
+
+  void reserve(const size_t reserve_size){
+    type_check<array_tag>();
+    value_->Reserve(reserve_size, *alloc_);
+  }
+
+  const_member_iterator erase(const const_member_iterator& itr){
+    type_check<object_tag>();
+    return details::make_transform_iterator(value_->EraseMember(itr.base()), const_member_wrapper_type(alloc_));
+  }
+
+  member_iterator erase(const member_iterator& itr){
+    type_check<object_tag>();
+    return details::make_transform_iterator(value_->EraseMember(itr.base()), member_wrapper_type(alloc_));
+  }
+
+  const_value_iterator erase(const const_value_iterator& itr){
+    type_check<array_tag>();
+    return details::make_transform_iterator(value_->Erase(itr.base()), const_value_wrapper_type(alloc_));
+  }
+
+  const_value_iterator erase(const const_value_iterator& beginItr, const const_value_iterator& endItr){
+    type_check<array_tag>();
+    return details::make_transform_iterator(value_->Erase(beginItr.base(), endItr.base()), const_value_wrapper_type(alloc_));
+  }
+
+  value_iterator erase(const value_iterator& itr){
+    type_check<array_tag>();
+    return details::make_transform_iterator(value_->Erase(itr.base()), value_wrapper_type(alloc_));
+  }
+
+  value_iterator erase(const value_iterator& beginItr, const value_iterator& endItr){
+    type_check<array_tag>();
+    return details::make_transform_iterator(value_->Erase(beginItr.base(), endItr.base()), value_wrapper_type(alloc_));
   }
 
   value_ref_type at(const string_ref_type& name)
@@ -769,11 +827,14 @@ public:
   const_member_iterator member_cbegin() const { return member_begin(); }
   const_member_iterator member_cend() const { return member_end(); }
 
-
   std::size_t size() const
   {
-    type_check<array_tag>();
-    return value_->Size();
+    if (is_object()) {
+      return value_->MemberCount();
+    } else if (is_array()) {
+      return value_->Size();
+    }
+    throw type_mismatch("cannot take size of non-object/array");
   }
 
   std::size_t capacity() const
@@ -806,7 +867,23 @@ public:
   const_value_ref_type operator[](std::size_t index) const { return at(index); }
 
   template <typename T>
-  void push_back(const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0)
+  void push_back(const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::enable_if< details::is_string<T> >::type * = 0)
+  {
+    type_check<array_tag>();
+    native_value_type v(value.data(), value.length(), *alloc_);
+    value_->PushBack(v, *alloc_);
+  }
+
+  template <typename T>
+  void push_back(const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::enable_if< details::is_cstr_ptr<T> >::type * = 0)
+  {
+    type_check<array_tag>();
+    native_value_type v(value, *alloc_);
+    value_->PushBack(v, *alloc_);
+  }
+
+  template <typename T>
+  void push_back(const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_string<T> >::type * = 0, typename details::disable_if< details::is_cstr_ptr<T> >::type * = 0)
   {
     type_check<array_tag>();
     native_value_type v(value);
@@ -985,6 +1062,10 @@ public:
     , base_type(member_type::value_impl_.get(), &alloc)
   {}
 
+
+  /*
+   *        Tag based constructors  
+   */
   template <typename Tag>
   basic_value(Tag tag, typename details::enable_if< details::is_tag<Tag> >::type* = 0)
     : member_type(new native_value_type(Tag::native_value), new allocator_type())
@@ -997,15 +1078,54 @@ public:
     , base_type(member_type::value_impl_.get(), &alloc)
   {}
 
+
+  /*
+   *        Value based constructors
+   */
   template <typename T>
-  basic_value(const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_tag<T> >::type* = 0)
+  basic_value(const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_tag<T> >::type* = 0, typename details::disable_if< details::is_string<T> >::type* = 0, typename details::disable_if< details::is_cstr_ptr<T> >::type* = 0)
     : member_type(new native_value_type(value), new allocator_type())
     , base_type(member_type::value_impl_.get(), member_type::alloc_impl_.get())
   {}
 
+  //Special handling for string types because to copy a string type we need to provide an allocator, but we don't have an allocator till we are part way through construction
   template <typename T>
-  basic_value(const T& value, allocator_type& alloc, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_tag<T> >::type* = 0)
+  basic_value(const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_tag<T> >::type* = 0, typename details::enable_if< details::is_string<T> >::type* = 0)
+    : member_type(new native_value_type(null_tag::native_value), new allocator_type())
+    , base_type(member_type::value_impl_.get(), member_type::alloc_impl_.get())
+  {
+    base_type::set(value);
+  }
+
+  //Special handling for string types because to copy a string type we need to provide an allocator, but we don't have an allocator till we are part way through construction
+  template <typename T>
+  basic_value(const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_tag<T> >::type* = 0, typename details::enable_if<details::is_cstr_ptr<T> >::type* = 0)
+    : member_type(new native_value_type(null_tag::native_value), new allocator_type())
+    , base_type(member_type::value_impl_.get(), member_type::alloc_impl_.get())
+  {
+    base_type::set(value);
+  }
+
+  /*
+   *        Value based constructors WITH an external allocator
+   */
+  template <typename T>
+  basic_value(const T& value, allocator_type& alloc, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_tag<T> >::type* = 0, typename details::disable_if< details::is_string<T> >::type* = 0, typename details::disable_if< details::is_cstr_ptr<T> >::type* = 0)
     : member_type(new native_value_type(value))
+    , base_type(member_type::value_impl_.get(), &alloc)
+  {}
+
+  //Special handling to make sure we copy strings with the given allocator
+  template <typename T>
+  basic_value(const T& value, allocator_type& alloc, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_tag<T> >::type* = 0, typename details::enable_if< details::is_string<T> >::type* = 0)
+    : member_type(new native_value_type(value, alloc))
+    , base_type(member_type::value_impl_.get(), &alloc)
+  {}
+
+  //Special handling to make sure we copy strings with the given allocator
+  template <typename T>
+  basic_value(const T& value, allocator_type& alloc, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_tag<T> >::type* = 0, typename details::enable_if< details::is_cstr_ptr<T> >::type* = 0)
+    : member_type(new native_value_type(value, alloc))
     , base_type(member_type::value_impl_.get(), &alloc)
   {}
 
