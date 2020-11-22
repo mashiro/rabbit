@@ -1,6 +1,8 @@
 #define BOOST_TEST_MODULE object_test
 #include <boost/test/unit_test.hpp>
 #include <rabbit.hpp>
+#include <map>
+#include <string>
 
 BOOST_AUTO_TEST_CASE(has_test)
 {
@@ -13,19 +15,72 @@ BOOST_AUTO_TEST_CASE(has_test)
   BOOST_CHECK(!o.has("bar"));
 }
 
-BOOST_AUTO_TEST_CASE(insert_test)
+BOOST_AUTO_TEST_CASE(insert_no_copy_test)
 {
   rabbit::value v;
-  BOOST_CHECK_THROW(v.insert("foo", 123), rabbit::type_mismatch);
+  BOOST_CHECK_THROW(v.insert("foo", 123, false), rabbit::type_mismatch);
 
   rabbit::object o;
   rabbit::value s("str");
-  o.insert("foo", 123);
-  o.insert("bar", s);
+  o.insert("foo", 123, false);
+  o.insert("bar", s, false);
   BOOST_CHECK(o.has("foo"));
   BOOST_CHECK(o.has("bar"));
   BOOST_CHECK(!o.has("buzz"));
 }
+
+BOOST_AUTO_TEST_CASE(insert_with_copy_test){
+  rabbit::object o;
+  std::map<std::string, int> key_vals;
+  key_vals.insert(std::make_pair("a", 0));
+  key_vals.insert(std::make_pair("b", 1));
+  key_vals.insert(std::make_pair("c", 2));
+
+  std::string tmp;
+  for(std::map<std::string, int>::const_iterator itr = key_vals.begin(), end = key_vals.end(); itr != end; ++itr){
+    tmp = itr->first + "-test";
+    o.insert(tmp, itr->second, true);
+  }
+
+  BOOST_CHECK(o.size() == 3);
+  BOOST_CHECK(o.has("a-test"));
+  BOOST_CHECK(o.has("b-test"));
+  BOOST_CHECK(o.has("c-test"));
+  BOOST_CHECK(o["a-test"].is_int());
+  BOOST_CHECK(o["a-test"].as_int() == 0);
+  BOOST_CHECK(o["b-test"].is_int());
+  BOOST_CHECK(o["b-test"].as_int() == 1);
+  BOOST_CHECK(o["c-test"].is_int());
+  BOOST_CHECK(o["c-test"].as_int() == 2);
+}
+
+
+BOOST_AUTO_TEST_CASE(op_bracket_with_copy_test){
+  rabbit::object o;
+  std::map<std::string, int> key_vals;
+  key_vals.insert(std::make_pair("a", 0));
+  key_vals.insert(std::make_pair("b", 1));
+  key_vals.insert(std::make_pair("c", 2));
+
+  std::string tmp;
+  for(std::map<std::string, int>::const_iterator itr = key_vals.begin(), end = key_vals.end(); itr != end; ++itr){
+    tmp = itr->first + "-test";
+    o[tmp] = itr->second;
+  }
+
+  BOOST_CHECK(o.size() == 3);
+  BOOST_CHECK(o.has("a-test"));
+  BOOST_CHECK(o.has("b-test"));
+  BOOST_CHECK(o.has("c-test"));
+  BOOST_CHECK(o["a-test"].is_int());
+  BOOST_CHECK(o["a-test"].as_int() == 0);
+  BOOST_CHECK(o["b-test"].is_int());
+  BOOST_CHECK(o["b-test"].as_int() == 1);
+  BOOST_CHECK(o["c-test"].is_int());
+  BOOST_CHECK(o["c-test"].as_int() == 2);
+}
+
+
 
 BOOST_AUTO_TEST_CASE(erase_test)
 {
@@ -167,3 +222,5 @@ BOOST_AUTO_TEST_CASE(member_size_test){
   v.erase("abc");
   BOOST_CHECK(v.size() == 2);
 }
+
+
