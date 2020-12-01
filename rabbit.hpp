@@ -704,35 +704,56 @@ public:
   }
 
   template <typename T>
-  void insert(const string_ref_type& name, const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::enable_if< details::is_string<T> >::type * = 0)
+  void insert(const string_ref_type& name, const T& value, const bool copy_name_string = true, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::enable_if< details::is_string<T> >::type * = 0)
   {
     type_check<object_tag>();
     native_value_type v(value.data(), value.length(), *alloc_);
-    value_->AddMember(rapidjson::StringRef(name.data(), name.length()), v, *alloc_);
+    if(copy_name_string){
+      native_value_type copied_name(name.data(), name.length(), *alloc_);
+      value_->AddMember(copied_name, v, *alloc_);
+    }else{
+      value_->AddMember(rapidjson::StringRef(name.data(), name.length()), v, *alloc_);
+    }
   }
 
   template <typename T>
-  void insert(const string_ref_type& name, const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::enable_if< details::is_cstr_ptr<T> >::type * = 0)
+  void insert(const string_ref_type& name, const T& value, const bool copy_name_string = true, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::enable_if< details::is_cstr_ptr<T> >::type * = 0)
   {
     type_check<object_tag>();
     native_value_type v(value, *alloc_);
-    value_->AddMember(rapidjson::StringRef(name.data(), name.length()), v, *alloc_);
+    if(copy_name_string){
+      native_value_type copied_name(name.data(), name.length(), *alloc_);
+      value_->AddMember(copied_name, v, *alloc_);
+    }else{
+      value_->AddMember(rapidjson::StringRef(name.data(), name.length()), v, *alloc_);
+    }
   }
 
 
   template <typename T>
-  void insert(const string_ref_type& name, const T& value, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_string<T> >::type * = 0, typename details::disable_if< details::is_cstr_ptr<T> >::type * = 0)
+  void insert(const string_ref_type& name, const T& value, const bool copy_name_string = true, typename details::disable_if< details::is_value_ref<T> >::type* = 0, typename details::disable_if< details::is_string<T> >::type * = 0, typename details::disable_if< details::is_cstr_ptr<T> >::type * = 0)
   {
     type_check<object_tag>();
     native_value_type v(value);
-    value_->AddMember(rapidjson::StringRef(name.data(), name.length()), v, *alloc_);
+    if(copy_name_string){
+      native_value_type copied_name(name.data(), name.length(), *alloc_);
+      value_->AddMember(copied_name, v, *alloc_);
+    }else{
+      value_->AddMember(rapidjson::StringRef(name.data(), name.length()), v, *alloc_);
+    }
   }
 
   template <typename T>
-  void insert(const string_ref_type& name, const T& value, typename details::enable_if< details::is_value_ref<T> >::type* = 0)
+  void insert(const string_ref_type& name, const T& value, const bool copy_name_string = true, typename details::enable_if< details::is_value_ref<T> >::type* = 0)
   {
     type_check<object_tag>();
-    value_->AddMember(rapidjson::StringRef(name.data(), name.length()), *value.get_native_value_pointer(), *alloc_);
+    if(copy_name_string){
+      native_value_type copied_name(name.data(), name.length(), *alloc_);
+      value_->AddMember(copied_name, *value.get_native_value_pointer(), *alloc_);
+    }else{
+      value_->AddMember(rapidjson::StringRef(name.data(), name.length()), *value.get_native_value_pointer(), *alloc_);
+    }
+
   }
 
   bool erase(const string_ref_type& name)
@@ -783,7 +804,8 @@ public:
     if (!has(name))
     {
       native_value_type null;
-      value_->AddMember(rapidjson::StringRef(name.data(), name.length()), null, *alloc_);
+      native_value_type copied_name(name.data(), name.length(), *alloc_);
+      value_->AddMember(copied_name, null, *alloc_);
     }
 
     return value_ref_type(&((*value_)[name.data()]), alloc_);
