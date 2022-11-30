@@ -680,7 +680,6 @@ public:
   RABBIT_AS_DEF(unsigned, uint, Uint)
   RABBIT_AS_DEF(int64_t, int64, Int64)
   RABBIT_AS_DEF(uint64_t, uint64, Uint64)
-  //RABBIT_AS_DEF(double, double, Double)
   RABBIT_AS_DEF(string_type, string, String)
 #undef RABBIT_AS_DEF
   double as_double() const
