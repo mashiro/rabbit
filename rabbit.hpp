@@ -595,7 +595,7 @@ public:
     else if (value.is_object()) throw std::runtime_error("can not assign object directly. please use insert");
   }
 
-  template <typename OtherTraits> 
+  template <typename OtherTraits>
   void deep_copy(const basic_value_ref<OtherTraits>& other)
   {
     value_->CopyFrom(*other.get_native_value_pointer(), *alloc_);
@@ -680,9 +680,30 @@ public:
   RABBIT_AS_DEF(unsigned, uint, Uint)
   RABBIT_AS_DEF(int64_t, int64, Int64)
   RABBIT_AS_DEF(uint64_t, uint64, Uint64)
-  RABBIT_AS_DEF(double, double, Double)
+  //RABBIT_AS_DEF(double, double, Double)
   RABBIT_AS_DEF(string_type, string, String)
 #undef RABBIT_AS_DEF
+  double as_double() const
+  {
+    if(!is_number()){
+      std::stringstream ss;
+      ss << "value is not ";
+      ss << details::type_name<double>();
+      ss << " (which is " << which() << ")";
+      throw type_mismatch(ss.str());
+    }
+    return value_->GetDouble();
+  }
+
+  template <typename T>
+  T as(typename details::enable_if< details::is_double<T> >::type* = 0) const
+  {
+    return as_double();
+  }
+
+
+
+
 
 private:
   struct as_t
@@ -1041,7 +1062,7 @@ struct basic_value_base
 };
 
 template <typename Traits, typename DefaultTag = null_tag>
-class basic_value 
+class basic_value
   : private basic_value_base<Traits>
   , public basic_value_ref<Traits>
 {
@@ -1086,7 +1107,7 @@ public:
 
 
   /*
-   *        Tag based constructors  
+   *        Tag based constructors
    */
   template <typename Tag>
   basic_value(Tag tag, typename details::enable_if< details::is_tag<Tag> >::type* = 0)

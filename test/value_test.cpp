@@ -284,8 +284,8 @@ BOOST_AUTO_TEST_SUITE(as_test) // {{{
     BOOST_CHECK_EQUAL(v.as<int64_t>(), 123);
     BOOST_CHECK_EQUAL(v.as_uint64(), 123);
     BOOST_CHECK_EQUAL(v.as<uint64_t>(), 123);
-    BOOST_CHECK_THROW(v.as_double(), rabbit::type_mismatch);
-    BOOST_CHECK_THROW(v.as<double>(), rabbit::type_mismatch);
+    BOOST_CHECK_CLOSE(v.as_double(), 123.0, 0.00001);
+    BOOST_CHECK_CLOSE(v.as<double>(), 123.0, 0.00001);
     BOOST_CHECK_THROW(v.as_string(), rabbit::type_mismatch);
     BOOST_CHECK_THROW(v.as<std::string>(), rabbit::type_mismatch);
   }
@@ -309,6 +309,28 @@ BOOST_AUTO_TEST_SUITE(as_test) // {{{
     BOOST_CHECK_THROW(v.as_string(), rabbit::type_mismatch);
     BOOST_CHECK_THROW(v.as<std::string>(), rabbit::type_mismatch);
   }
+
+  BOOST_AUTO_TEST_CASE(double_from_int_test)
+  {
+    rabbit::value v(123);
+
+    BOOST_CHECK_THROW(v.as_bool(), rabbit::type_mismatch);
+    BOOST_CHECK_THROW(v.as<bool>(), rabbit::type_mismatch);
+    BOOST_CHECK_EQUAL(v.as_int(), 123);
+    BOOST_CHECK_EQUAL(v.as<int>(), 123);
+    BOOST_CHECK_EQUAL(v.as_uint(), 123);
+    BOOST_CHECK_EQUAL(v.as<unsigned>(), 123);
+    BOOST_CHECK_EQUAL(v.as_int64(), 123);
+    BOOST_CHECK_EQUAL(v.as<int64_t>(), 123);
+    BOOST_CHECK_EQUAL(v.as_uint64(), 123);
+    BOOST_CHECK_EQUAL(v.as<uint64_t>(), 123);
+    BOOST_CHECK_CLOSE(v.as_double(), 123.0, 0.00001);
+    BOOST_CHECK_CLOSE(v.as<double>(), 123.0, 0.00001);
+    BOOST_CHECK_THROW(v.as_string(), rabbit::type_mismatch);
+    BOOST_CHECK_THROW(v.as<std::string>(), rabbit::type_mismatch);
+  }
+
+
 
   BOOST_AUTO_TEST_CASE(string_test)
   {
@@ -572,4 +594,63 @@ BOOST_AUTO_TEST_CASE(value_insert_string){
 
   BOOST_CHECK(v["xyz"].as_string() == "abcde");
 
+}
+
+
+
+BOOST_AUTO_TEST_CASE(rabbit_number_is_and_as_compared_to_rapid){
+  {
+    rabbit::value v(123);
+    BOOST_CHECK_EQUAL(v.is_int(), v.get_native_value_pointer()->IsInt());
+    BOOST_CHECK_EQUAL(v.is_uint(), v.get_native_value_pointer()->IsUint());
+    BOOST_CHECK_EQUAL(v.is_int64(), v.get_native_value_pointer()->IsInt64());
+    BOOST_CHECK_EQUAL(v.is_uint64(), v.get_native_value_pointer()->IsUint64());
+    BOOST_CHECK_EQUAL(v.is_double(), v.get_native_value_pointer()->IsDouble());
+
+    BOOST_CHECK_EQUAL(v.as_int(), v.get_native_value_pointer()->GetInt());
+    BOOST_CHECK_EQUAL(v.as_uint(), v.get_native_value_pointer()->GetUint());
+    BOOST_CHECK_EQUAL(v.as_int64(), v.get_native_value_pointer()->GetInt64());
+    BOOST_CHECK_EQUAL(v.as_uint64(), v.get_native_value_pointer()->GetUint64());
+    BOOST_CHECK_EQUAL(v.as_double(), v.get_native_value_pointer()->GetDouble());
+  }
+
+  {
+    rabbit::value v(4294967295);
+    BOOST_CHECK_EQUAL(v.is_int(), v.get_native_value_pointer()->IsInt());
+    BOOST_CHECK_EQUAL(v.is_uint(), v.get_native_value_pointer()->IsUint());
+    BOOST_CHECK_EQUAL(v.is_int64(), v.get_native_value_pointer()->IsInt64());
+    BOOST_CHECK_EQUAL(v.is_uint64(), v.get_native_value_pointer()->IsUint64());
+    BOOST_CHECK_EQUAL(v.is_double(), v.get_native_value_pointer()->IsDouble());
+
+    BOOST_CHECK_EQUAL(v.as_uint(), v.get_native_value_pointer()->GetUint());
+    BOOST_CHECK_EQUAL(v.as_int64(), v.get_native_value_pointer()->GetInt64());
+    BOOST_CHECK_EQUAL(v.as_uint64(), v.get_native_value_pointer()->GetUint64());
+    BOOST_CHECK_EQUAL(v.as_double(), v.get_native_value_pointer()->GetDouble());
+  }
+
+
+  {
+    rabbit::value v(9223372036854775807);
+    BOOST_CHECK_EQUAL(v.is_int(), v.get_native_value_pointer()->IsInt());
+    BOOST_CHECK_EQUAL(v.is_uint(), v.get_native_value_pointer()->IsUint());
+    BOOST_CHECK_EQUAL(v.is_int64(), v.get_native_value_pointer()->IsInt64());
+    BOOST_CHECK_EQUAL(v.is_uint64(), v.get_native_value_pointer()->IsUint64());
+    BOOST_CHECK_EQUAL(v.is_double(), v.get_native_value_pointer()->IsDouble());
+
+    BOOST_CHECK_EQUAL(v.as_int64(), v.get_native_value_pointer()->GetInt64());
+    BOOST_CHECK_EQUAL(v.as_uint64(), v.get_native_value_pointer()->GetUint64());
+    BOOST_CHECK_EQUAL(v.as_double(), v.get_native_value_pointer()->GetDouble());
+  }
+
+  {
+    rabbit::value v(static_cast<uint64_t>(9223372036854775808ULL));
+    BOOST_CHECK_EQUAL(v.is_int(), v.get_native_value_pointer()->IsInt());
+    BOOST_CHECK_EQUAL(v.is_uint(), v.get_native_value_pointer()->IsUint());
+    BOOST_CHECK_EQUAL(v.is_int64(), v.get_native_value_pointer()->IsInt64());
+    BOOST_CHECK_EQUAL(v.is_uint64(), v.get_native_value_pointer()->IsUint64());
+    BOOST_CHECK_EQUAL(v.is_double(), v.get_native_value_pointer()->IsDouble());
+
+    BOOST_CHECK_EQUAL(v.as_uint64(), v.get_native_value_pointer()->GetUint64());
+    BOOST_CHECK_EQUAL(v.as_double(), v.get_native_value_pointer()->GetDouble());
+  }
 }
